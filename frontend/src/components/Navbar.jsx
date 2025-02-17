@@ -12,9 +12,7 @@ const Navbar = ({setIsLoggedIn}) => {
   };
 
   const menuItems = [
-    { label: 'Home', icon: <Home size={20} />, path: '/' },
-    { label: 'Contact', icon: <Phone size={20} />, path: '/contact' },
-    { label: 'About', icon: <Info size={20} />, path: '/about' },
+    { label: 'login', icon: <Home size={20} />, path: '/' },
   ];
 
   return (

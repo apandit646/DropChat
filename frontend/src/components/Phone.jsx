@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-const Phone = () => {
+const Phone = ({setIsLoggedIn}) => {
   const [countryCode, setCountryCode] = useState("+91");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -13,8 +13,12 @@ const Phone = () => {
     name: "",
     email: ""
   });
-  
-  
+
+  const navigate = useNavigate();
+
+
+
+
   const countryCodes = [
     { code: "+1", country: "US/CA" },
     { code: "+44", country: "UK" },
@@ -41,7 +45,7 @@ const Phone = () => {
         },
         body: JSON.stringify({ phone: `${countryCode}${phone}` }),
       });
-      
+
       const data = await response.json();
       setMessage(data.message || "OTP sent successfully!");
       setShowOtpInput(true);
@@ -66,9 +70,9 @@ const Phone = () => {
         },
         body: JSON.stringify({ phone: `${countryCode}${phone}`, otp }),
       });
-      
+
       const data = await response.json();
-      console.log(data,"<<<<<<<<<<<<<");
+      console.log(data, "<<<<<<<<<<<<<");
       if (response.ok) {
         setMessage("OTP verified successfully!");
         setShowUserDetailsModal(true);
@@ -104,14 +108,17 @@ const Phone = () => {
           email: userDetails.email
         }),
       });
-      
+
       const data = await response.json();
-      console.log(data,"<<<<<<<<<<<<<");
-      if(response.status === 200) {
-        alert("�� Registration Successful! ��");
-        await localStorage.setItem("token",data.token);
-        await localStorage.setItem("name",data.name);
-        await localStorage.setItem("userId",data.id);
+      console.log(data, "<<<<<<<<<<<<<");
+      if (response.status === 200) {
+        
+        await localStorage.setItem("token", data.token);
+        await localStorage.setItem("name", data.name);
+        await localStorage.setItem("userId", data.id);
+        await localStorage.setItem("email", data.email);
+        setIsLoggedIn(true)
+        navigate("/chat");
       }
     } catch (error) {
       setMessage("Error saving details. Please try again.");
@@ -123,7 +130,7 @@ const Phone = () => {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
       <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-md">
         <h2 className="text-2xl font-semibold text-center mb-6">Phone Verification</h2>
-        
+
         {!showOtpInput ? (
           <div className="space-y-4">
             <div className="flex gap-2">
@@ -192,11 +199,10 @@ const Phone = () => {
         )}
 
         {message && (
-          <p className={`mt-4 text-center ${
-            message.includes("Error") || message.includes("Invalid")
+          <p className={`mt-4 text-center ${message.includes("Error") || message.includes("Invalid")
               ? "text-red-500"
               : "text-green-500"
-          }`}>
+            }`}>
             {message}
           </p>
         )}

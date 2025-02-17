@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "bootstrap": "^5.3.3",
     "firebase": "^11.3.0",
     "framer-motion": "^12.4.1",
     "lucide-react": "^0.475.0",
@@ -19,7 +20,8 @@
     "react-native-gesture-handler": "^2.23.1",
     "react-native-reanimated": "^3.16.7",
     "react-native-vector-icons": "^10.2.0",
-    "react-router-dom": "^7.1.5"
+    "react-router-dom": "^7.1.5",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

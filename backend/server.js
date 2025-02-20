@@ -1,38 +1,53 @@
-// Import required modules
-const express = require('express');
-const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
-const dotenv = require('dotenv');
-const cors = require('cors')
+import express from 'express';
+import mongoose from 'mongoose';
+import bodyParser from 'body-parser';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import http from 'http';
+import { Server } from 'socket.io';
+import socketHandler from './socket.js';
+import userRouter from './router/userRouter.js';
 
-const app = express();
-
-
-
+// Load environment variables
 dotenv.config();
 
-// srver
-const userRouter = require('./router/userRouter');
-const User = require('./models/userModel');
-// Initialize Express app
+// Initialize Express app and server
+const app = express();
+const server = http.createServer(app);
 
 // Middleware
+app.use(cors({
+  origin: "http://localhost:5173", // Adjust based on your frontend URL
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
 app.use(bodyParser.json());
 app.use(express.json());
-app.use(cors());
+
+// Socket.io configuration
+const io = new Server(server, {
+  cors: {
+    origin: 'http://localhost:5173',
+    methods: ["GET", "POST"]
+  }
+});
+socketHandler(io);
 
 // Connect to MongoDB
 mongoose.connect(process.env.URL, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
     console.log('Connected to MongoDB');
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
-
   })
-  .catch(err => console.error('MongoDB connection error:', err));
-
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+  });
 
 // Routes
-app.use(userRouter)
+app.use(userRouter);
+
+// Start server
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

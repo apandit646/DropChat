@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-const Phone = ({setIsLoggedIn}) => {
+const Phone = ({ setIsLoggedIn }) => {
   const [countryCode, setCountryCode] = useState("+91");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -11,13 +11,10 @@ const Phone = ({setIsLoggedIn}) => {
   const [showUserDetailsModal, setShowUserDetailsModal] = useState(false);
   const [userDetails, setUserDetails] = useState({
     name: "",
-    email: ""
+    email: "",
   });
 
   const navigate = useNavigate();
-
-
-
 
   const countryCodes = [
     { code: "+1", country: "US/CA" },
@@ -41,7 +38,7 @@ const Phone = ({setIsLoggedIn}) => {
       const response = await fetch("http://localhost:5000/otp/send-otp", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ phone: `${countryCode}${phone}` }),
       });
@@ -66,7 +63,7 @@ const Phone = ({setIsLoggedIn}) => {
       const response = await fetch("http://localhost:5000/otp/verify-otp", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ phone: `${countryCode}${phone}`, otp }),
       });
@@ -100,24 +97,23 @@ const Phone = ({setIsLoggedIn}) => {
       const response = await fetch("http://localhost:5000/user/details ", {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           phone: `${countryCode}${phone}`,
           name: userDetails.name,
-          email: userDetails.email
+          email: userDetails.email,
         }),
       });
 
       const data = await response.json();
       console.log(data, "<<<<<<<<<<<<<");
       if (response.status === 200) {
-        
         await localStorage.setItem("token", data.token);
         await localStorage.setItem("name", data.name);
         await localStorage.setItem("userId", data.id);
         await localStorage.setItem("email", data.email);
-        setIsLoggedIn(true)
+        setIsLoggedIn(true);
         navigate("/chat");
       }
     } catch (error) {
@@ -129,7 +125,9 @@ const Phone = ({setIsLoggedIn}) => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
       <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-2xl font-semibold text-center mb-6">Phone Verification</h2>
+        <h2 className="text-2xl font-semibold text-center mb-6">
+          Phone Verification
+        </h2>
 
         {!showOtpInput ? (
           <div className="space-y-4">
@@ -199,10 +197,13 @@ const Phone = ({setIsLoggedIn}) => {
         )}
 
         {message && (
-          <p className={`mt-4 text-center ${message.includes("Error") || message.includes("Invalid")
-              ? "text-red-500"
-              : "text-green-500"
-            }`}>
+          <p
+            className={`mt-4 text-center ${
+              message.includes("Error") || message.includes("Invalid")
+                ? "text-red-500"
+                : "text-green-500"
+            }`}
+          >
             {message}
           </p>
         )}
@@ -212,31 +213,43 @@ const Phone = ({setIsLoggedIn}) => {
       {showUserDetailsModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-xl font-semibold mb-4">Complete Your Profile</h3>
+            <h3 className="text-xl font-semibold mb-4">
+              Complete Your Profile
+            </h3>
             <form onSubmit={handleUserDetailsSubmit} className="space-y-4">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Full Name
                 </label>
                 <input
                   type="text"
                   id="name"
                   value={userDetails.name}
-                  onChange={(e) => setUserDetails({ ...userDetails, name: e.target.value })}
+                  onChange={(e) =>
+                    setUserDetails({ ...userDetails, name: e.target.value })
+                  }
                   className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter your full name"
                   required
                 />
               </div>
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Email Address
                 </label>
                 <input
                   type="email"
                   id="email"
                   value={userDetails.email}
-                  onChange={(e) => setUserDetails({ ...userDetails, email: e.target.value })}
+                  onChange={(e) =>
+                    setUserDetails({ ...userDetails, email: e.target.value })
+                  }
                   className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter your email"
                   required

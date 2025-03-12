@@ -2,8 +2,10 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const User = require('./models/userModel')
-
+const Message = require('./models/chatSchema');
+const mongoose = require("mongoose");
 const secretKey = crypto.createHash('sha256').update(String('your-secret-key')).digest('base64').substr(0, 32);
+const userSockets = new Map();
 
 
 const socketHandler = (io) => {
@@ -22,30 +24,39 @@ const socketHandler = (io) => {
     });
   });
 
-  io.on("connection", async(socket) => {
+  io.on("connection", async (socket) => {
     console.log("New client connected", socket.user);
-    socket.on('userFindemail', async(data) => {
-      console.log("Message received:", data);
+
+    if (socket.user) {
+      userSockets.set(socket.user.id, socket.id);
+    }
+
+    socket.on('userFindemail', async (email) => {
       try {
-        
-  
-        // Find users based on the email
-        const user_data = await User.find({ email: data }).limit(4);
-        console.log(user_data, "user_data")
-  
-        // If no user data is found, emit "none"
-        if (user_data.length === 0) {
-          io.emit("res_userFindemail", null);
-        } else {
-          // Emit the user data
-          io.emit("res_userFindemail", user_data);
+        const user_data = await User.findOne({ email }).lean();
+        socket.emit("res_userFindemail", user_data || null);
+      } catch (error) {
+        console.error("Error finding user:", error);
+        socket.emit("res_userFindemail", null);
+      }
+    });
+
+    socket.on("sendMessage", async (data) => {
+      const { sender, receiver, message } = data;
+      try {
+        const newMessage = new Message({ sender, receiver, message });
+        await newMessage.save();
+
+        // Send message to sender and receiver
+        socket.emit("message", newMessage);
+        if (userSockets.has(receiver)) {
+          io.to(userSockets.get(receiver)).emit("message", newMessage);
         }
       } catch (error) {
-        // Handle any potential errors (e.g., database errors)
-        console.error("Error finding user:", error);
-        io.emit("res_userFindemail", null);
+        console.error("Error sending message:", error);
       }
-    })
+    });
+
 
 
     socket.on("disconnect", () => {

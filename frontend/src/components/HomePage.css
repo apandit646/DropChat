@@ -1,0 +1,158 @@
+/* General Styles */
+.home-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to bottom, #f9fafb, #e5e7eb);
+    text-align: center;
+  }
+  
+  /* Hero Section */
+  .hero {
+    padding: 80px 20px;
+  }
+  
+  .hero-content {
+    max-width: 700px;
+    margin: auto;
+  }
+  
+  .hero-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    background: linear-gradient(to right, #2563eb, #9333ea);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .hero-subtitle {
+    font-size: 1.2rem;
+    color: #555;
+    margin-bottom: 20px;
+  }
+  
+  .button-group {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+  
+  /* Features Section */
+  .features {
+    padding: 60px 20px;
+  }
+  
+  .section-title {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+  }
+  
+  .feature-grid {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  
+  .card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+    width: 280px;
+    transition: box-shadow 0.3s;
+  }
+  
+  .card:hover {
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .icon-container {
+    padding: 15px;
+  }
+  
+  .card-content h3 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+  }
+  
+  /* Additional Features */
+  .extra-features {
+    background: white;
+    padding: 60px 20px;
+  }
+  
+  .extra-feature-list {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+  }
+  
+  .extra-feature-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .icon-bg {
+    background: #dbeafe;
+    padding: 10px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Call to Action */
+  .cta {
+    background: linear-gradient(to right, #2563eb, #9333ea);
+    color: white;
+    padding: 60px 20px;
+  }
+  
+  .cta-content h2 {
+    font-size: 2rem;
+  }
+  
+  .cta-content p {
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+  }
+  
+  /* Buttons */
+  .btn {
+    padding: 10px 20px;
+    font-size: 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .btn.primary {
+    background: #2563eb;
+    color: white;
+  }
+  
+  .btn.outline {
+    background: transparent;
+    border: 2px solid #2563eb;
+    color: #2563eb;
+  }
+  
+  .btn.link {
+    background: none;
+    color: #2563eb;
+    font-weight: bold;
+  }
+  
+  .btn.secondary {
+    background: white;
+    color: #2563eb;
+  }
+  

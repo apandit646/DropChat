@@ -248,10 +248,10 @@ const NavbarUser = ({ setIsLoggedIn }) => {
           </li>
           <li>
             <Link
-              to="/status"
+              to="/news"
               className="flex items-center px-4 py-2 md:px-0 hover:text-purple-200 transition-colors duration-300"
             >
-              📊 <span className="ml-2">Status</span>
+              📊 <span className="ml-2">News</span>
             </Link>
           </li>
           <li className="relative">

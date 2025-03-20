@@ -1,16 +1,20 @@
 import { useState, useEffect } from "react";
-import { Send, Users } from "lucide-react";
+import { Send, Users, X } from "lucide-react";
 import io from "socket.io-client";
 
 const token = localStorage.getItem("token");
 const userId = localStorage.getItem("userId");
 
-const Chat = () => {
+const GroupChat = () => {
   const [socket, setSocket] = useState(null);
   const [selectedFriend, setSelectedFriend] = useState(null);
-  const [messages, setMessages] = useState([]); // Combines chat history and new messages
+  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [friends, setFriends] = useState([]);
+  const [group, setgroup] = useState([]);
+  const [isGroupFormVisible, setIsGroupFormVisible] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [selectedMembers, setSelectedMembers] = useState([]);
 
   // Initialize Socket Connection
   useEffect(() => {
@@ -32,6 +36,30 @@ const Chat = () => {
   }, [friends]);
 
   // Fetch Friends List
+
+  useEffect(() => {
+    async function getFriendsGroupList() {
+      try {
+        const res = await fetch("http://127.0.0.1:5000/getFriendGroupList", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+        console.log("group", data);
+        if (Array.isArray(data)) {
+          setgroup(data);
+        }
+      } catch (error) {
+        console.error("Error fetching friends:", error);
+      }
+    }
+    getFriendsGroupList();
+  }, []);
+
   useEffect(() => {
     async function getFriendsList() {
       try {
@@ -59,7 +87,6 @@ const Chat = () => {
     if (!socket) return;
 
     const messageHandler = (serverMsg) => {
-      // Transform socket message to match component's format
       const transformedMsg = {
         text: serverMsg.message,
         sender: serverMsg.sender,
@@ -96,11 +123,10 @@ const Chat = () => {
       const data = await res.json();
       console.log(data, "Fetched Chat History");
 
-      // Transform server data to match component's expected format
       const transformedMessages = data.map((msg) => ({
-        text: msg.message, // Map 'message' field to 'text'
+        text: msg.message,
         sender: msg.sender,
-        timestamp: new Date(msg.createdAt).toLocaleTimeString(), // Convert ISO date
+        timestamp: new Date(msg.createdAt).toLocaleTimeString(),
         _id: msg._id,
       }));
 
@@ -120,7 +146,7 @@ const Chat = () => {
       timestamp: new Date().toLocaleTimeString(),
     };
 
-    setMessages((prev) => [...prev, newMsg]); // Append the new message to the messages state
+    setMessages((prev) => [...prev, newMsg]);
 
     socket.emit("sendMessage", {
       receiver: selectedFriend._id,
@@ -137,18 +163,72 @@ const Chat = () => {
     }
   };
 
+  // Handle Group Creation
+  const handleCreateGroup = () => {
+    setIsGroupFormVisible(true);
+  };
+
+  const handleGroupNameChange = (e) => {
+    setGroupName(e.target.value);
+  };
+
+  const handleMemberSelection = (friend) => {
+    if (selectedMembers.includes(friend._id)) {
+      setSelectedMembers(selectedMembers.filter((id) => id !== friend._id));
+    } else {
+      setSelectedMembers([...selectedMembers, friend._id]);
+    }
+  };
+
+  const handleGroupSubmit = async () => {
+    if (!groupName.trim() || selectedMembers.length === 0) return;
+
+    try {
+      const res = await fetch("http://127.0.0.1:5000/createGroup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: groupName,
+          members: [...selectedMembers],
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to create group");
+
+      const data = await res.json();
+      console.log(data, "Group Created");
+
+      // Reset form and close it
+      setGroupName("");
+      setSelectedMembers([]);
+      setIsGroupFormVisible(false);
+    } catch (error) {
+      console.error("Error creating group:", error);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Users className="h-5 w-5 text-gray-500" />
             <h2 className="text-xl font-semibold text-gray-800">Friends</h2>
           </div>
+          <button
+            onClick={handleCreateGroup}
+            className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-700 transition-colors"
+          >
+            <Send className="h-5 w-5" />
+            <span className="font-medium">Create Group</span>
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {friends.map((friend) => (
+          {group.map((friend) => (
             <div
               key={friend._id}
               onClick={() => getChatMessages(friend)}
@@ -249,8 +329,63 @@ const Chat = () => {
           </div>
         )}
       </div>
+
+      {/* Group Creation Form */}
+      {isGroupFormVisible && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Create Group</h2>
+              <button
+                onClick={() => setIsGroupFormVisible(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <input
+              type="text"
+              value={groupName}
+              onChange={handleGroupNameChange}
+              placeholder="Group Name"
+              className="w-full p-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:border-blue-500"
+            />
+            <div className="mb-4">
+              <h3 className="text-lg font-medium mb-2">Select Members</h3>
+              <div className="max-h-40 overflow-y-auto">
+                {group.map((friend) => (
+                  <div
+                    key={friend._id}
+                    className="flex items-center space-x-2 p-2 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => handleMemberSelection(friend)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedMembers.includes(friend._id)}
+                      onChange={() => handleMemberSelection(friend)}
+                      className="form-checkbox h-5 w-5 text-blue-600"
+                    />
+                    <img
+                      src={friend.avatar || "/default-avatar.png"}
+                      alt={friend.name}
+                      className="w-8 h-8 rounded-full"
+                    />
+                    <span className="text-gray-800">{friend.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <button
+              onClick={handleGroupSubmit}
+              className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              Create Group
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default Chat;
+export default GroupChat;

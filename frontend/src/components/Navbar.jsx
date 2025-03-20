@@ -1,19 +1,17 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Menu, X, User, LogOut, Home, Phone, Info } from 'lucide-react';
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { Menu, X, User, LogOut, Home, Phone, Info } from "lucide-react";
 
-const Navbar = ({setIsLoggedIn}) => {
+const Navbar = ({ setIsLoggedIn }) => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
     // Add your logout logic here
-    navigate('/login');
+    navigate("/login");
   };
 
-  const menuItems = [
-    { label: 'login', icon: <Home size={20} />, path: '/' },
-  ];
+  const menuItems = [{ label: "login", icon: <Home size={20} />, path: "/" }];
 
   return (
     <nav className="bg-white shadow-lg">
@@ -26,7 +24,7 @@ const Navbar = ({setIsLoggedIn}) => {
                 Logo
               </Link>
             </div>
-            
+
             {/* Desktop menu */}
             <div className="hidden md:ml-6 md:flex md:space-x-8">
               {menuItems.map((item) => (

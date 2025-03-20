@@ -59,7 +59,7 @@ router.get("/getFriendReq", authenticateToken, async (req, res) => {
         // Fetch all friend requests sent BY the user (change to { to: userId } if needed)
         const requestFriends = await Requestfriend.find({ to: userId });
 
-        console.log(requestFriends, "requestFriends <<<<<<<<<<<<<<<<<<<");
+        // console.log(requestFriends, "requestFriends <<<<<<<<<<<<<<<<<<<");
 
         if (!requestFriends.length) {
             return res.status(400).json({ error: "No friend requests found" });
@@ -68,7 +68,7 @@ router.get("/getFriendReq", authenticateToken, async (req, res) => {
         // Extract receiver IDs from requests
         const receiverIds = requestFriends.map((req) => req.from);
 
-        console.log(receiverIds, "receiverIds <<<<<<<<<<<<<<<<<<<<<<");
+        // console.log(receiverIds, "receiverIds <<<<<<<<<<<<<<<<<<<<<<");
 
         // Fetch user details of receivers
         const friends = await User.find({ _id: { $in: receiverIds } });
@@ -89,18 +89,18 @@ router.put('/getFriendReq/accRej', authenticateToken, async (req, res) => {
         const userId = new mongoose.Types.ObjectId(user.id);
         const data = req.body;
         const dataId = new mongoose.Types.ObjectId(data.id)
-        console.log(dataId, "dataDDDDDDDDDDDDDDDDDDDDDD")
-        console.log(userId, "UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU")
+        // console.log(dataId, "dataDDDDDDDDDDDDDDDDDDDDDD")
+        // console.log(userId, "UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU")
         const status = data.status
-        console.log(status, "statusssssssssssssssssssssssssss")
+        // console.log(status, "statusssssssssssssssssssssssssss")
         if (status === "accepted") {
             const requestFriend = await Requestfriend.findOneAndUpdate({ $and: [{ from: dataId, to: userId }] }, { status: data.status })
-            console.log(requestFriend, "requestFriend <<<<<<<<<<<<<<<");
+            // console.log(requestFriend, "requestFriend <<<<<<<<<<<<<<<");
             res.status(200).json({ message: 'Friend request accepted successfully' });
         }
         else if (status === "rejected") {
             const requestFriend = await Requestfriend.findOneAndDelete({ $and: [{ from: dataId, to: userId }] })
-            console.log(requestFriend, "requestFriend <<<<<<<<<<<<<<<");
+            // console.log(requestFriend, "requestFriend <<<<<<<<<<<<<<<");
             res.status(200).json({ message: 'Friend request rejected successfully' });
         }
 

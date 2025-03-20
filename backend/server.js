@@ -16,6 +16,7 @@ import socketHandler from './socket.js';
 import userRouter from './router/userRouter.js';
 import requestRouter from './router/requestRouter.js';
 import chatRouter from './router/chatRouter.js';
+import group from './router/group.js';
 
 
 // Load environment variables
@@ -57,6 +58,7 @@ mongoose.connect(process.env.URL, { useNewUrlParser: true, useUnifiedTopology: t
 app.use(userRouter); // user related router login 
 app.use(requestRouter); // fachiching data sending request etc ...
 app.use(chatRouter);// chat related router........
+app.use(group);// Gropu Chat  related router........
 
 // Start server
 const PORT = process.env.PORT || 5000;  // taking cradintial from the chat env........ 

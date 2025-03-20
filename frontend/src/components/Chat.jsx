@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Send, Users } from "lucide-react";
 import io from "socket.io-client";
-
+import image from "../img/avatar.jpg";
 const token = localStorage.getItem("token");
 const userId = localStorage.getItem("userId");
 
@@ -157,7 +157,7 @@ const Chat = () => {
               }`}
             >
               <img
-                src={friend.avatar || "/default-avatar.png"}
+                src={image}
                 alt={friend.name}
                 className="w-10 h-10 rounded-full"
               />
@@ -183,7 +183,7 @@ const Chat = () => {
             <div className="p-4 border-b border-gray-200 bg-white">
               <div className="flex items-center space-x-3">
                 <img
-                  src={selectedFriend.avatar || "/default-avatar.png"}
+                  src={image}
                   alt={selectedFriend.name}
                   className="w-10 h-10 rounded-full"
                 />

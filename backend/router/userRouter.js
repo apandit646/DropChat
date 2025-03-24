@@ -102,7 +102,7 @@ router.put("/user/details", async (req, res) => {
       return res.status(400).json({ error: "User not found" });
     }
     console.log(user);
-    const token = jwt.sign({ id: user._id.toString(), email: user.email }, secretKey, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user._id.toString(), email: user.email }, secretKey, { expiresIn: '10h' });
 
     return res.status(200).json({
       message: "Login successful",

@@ -22,12 +22,6 @@ function HomePage() {
             Connect with friends, join groups, read the latest news, and chat
             seamlessly online.
           </p>
-          <div className="button-group">
-            <button className="btn primary">
-              Get Started <ArrowRight size={18} />
-            </button>
-            <button className="btn outline">Learn More</button>
-          </div>
         </div>
       </section>
 
@@ -52,7 +46,7 @@ function HomePage() {
               icon: Users,
               title: "Group Chats",
               text: "Create or join group conversations.",
-              link: "/groups",
+              link: "/group-chat",
             },
           ].map(({ icon: Icon, title, text, link }, index) => (
             <div key={index} className="card">

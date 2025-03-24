@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import io from "socket.io-client";
-import image from "../img/avatar.jpg";
+import image from "../img/group.png";
 
 const token = localStorage.getItem("token");
 const userId = localStorage.getItem("userId");

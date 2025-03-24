@@ -22,6 +22,9 @@ const socket = io("http://127.0.0.1:5000", {
   withCredentials: true,
 });
 
+const name_Person = localStorage.getItem("name");
+const email_Person = localStorage.getItem("email");
+
 // eslint-disable-next-line react/prop-types
 const NavbarUser = ({ setIsLoggedIn }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,7 +33,7 @@ const NavbarUser = ({ setIsLoggedIn }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [notificationCount, setNotificationCount] = useState(2);
+  const [isSearching, setIsSearching] = useState(false);
   const searchRef = useRef(null);
   const profileRef = useRef(null);
   const requestRef = useRef(null);
@@ -88,11 +91,20 @@ const NavbarUser = ({ setIsLoggedIn }) => {
   useEffect(() => {
     socket.on("res_userFindemail", (data) => {
       console.log(data, "data ");
-      if (data === null) return setSearchResults(null);
-      setSearchResults(data);
-      console.log(searchResults, "search results");
+      setIsSearching(false);
+      if (data === null) {
+        setSearchResults([]);
+      } else {
+        setSearchResults(Array.isArray(data) ? data : [data]);
+      }
+      console.log("search results", searchResults);
     });
-  }, [setSearchQuery, searchResults]);
+
+    // Cleanup listener on component unmount
+    return () => {
+      socket.off("res_userFindemail");
+    };
+  }, []);
 
   const handleAccept = async (id) => {
     console.log("Handle Accept", id);
@@ -146,11 +158,17 @@ const NavbarUser = ({ setIsLoggedIn }) => {
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
+    if (e.target.value.trim() === "") {
+      setSearchResults([]);
+    }
   };
 
   const handleSearchClick = () => {
-    socket.emit("userFindemail", searchQuery);
-    setShowSearchResults(true);
+    if (searchQuery.trim() !== "") {
+      setIsSearching(true);
+      socket.emit("userFindemail", searchQuery);
+      setShowSearchResults(true);
+    }
   };
 
   const LogOut_User = () => {
@@ -250,7 +268,7 @@ const NavbarUser = ({ setIsLoggedIn }) => {
                   />
                 </motion.div>
                 <span className="hidden md:inline text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-                  ChatApp
+                  DropChat
                 </span>
               </Link>
 
@@ -269,7 +287,14 @@ const NavbarUser = ({ setIsLoggedIn }) => {
                     className="w-full pl-10 pr-4 py-2.5 rounded-full bg-white/10 backdrop-blur-sm text-white placeholder-white/70 border border-white/20 focus:outline-none focus:ring-2 focus:ring-pink-300/70 transition-all duration-300"
                     value={searchQuery}
                     onChange={handleSearch}
-                    onFocus={() => setShowSearchResults(true)}
+                    onFocus={() => {
+                      if (
+                        searchQuery.trim() !== "" &&
+                        searchResults.length > 0
+                      ) {
+                        setShowSearchResults(true);
+                      }
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleSearchClick();
                     }}
@@ -291,48 +316,68 @@ const NavbarUser = ({ setIsLoggedIn }) => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute mt-2 w-full bg-white rounded-xl shadow-xl py-2 text-gray-800 z-50 overflow-hidden border border-purple-100"
+                      className="absolute mt-2 w-full bg-white rounded-xl shadow-xl py-2 text-gray-800 z-50 border border-purple-100 overflow-hidden"
                     >
-                      {searchResults?.length > 0 ? (
-                        searchResults.map((result) => (
+                      {isSearching ? (
+                        <div className="flex items-center justify-center py-6">
+                          <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                          <span className="ml-2 text-gray-600">
+                            Searching...
+                          </span>
+                        </div>
+                      ) : searchResults && searchResults.length > 0 ? (
+                        searchResults.map((user) => (
                           <motion.div
-                            key={result._id}
+                            key={user._id}
                             whileHover={{ backgroundColor: "#f9f5ff" }}
-                            className="px-4 py-3 cursor-pointer border-b border-purple-50 last:border-b-0"
+                            className="px-4 py-3 cursor-pointer border-b border-purple-50 last:border-b-0 transition-all flex items-center gap-3"
                           >
-                            <div className="flex items-center">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-400 to-purple-400 flex items-center justify-center text-white font-semibold">
-                                {result.name.charAt(0).toUpperCase()}
-                              </div>
-                              <div className="ml-3">
-                                <div className="font-medium">{result.name}</div>
-                                <div className="text-xs text-gray-500">
-                                  {result.email}
-                                </div>
-                              </div>
-                              <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => request_friend(result._id)}
-                                className="ml-auto px-3 py-1.5 rounded-full text-white text-sm font-medium bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-sm flex items-center"
-                              >
-                                <Heart size={14} className="mr-1" />
-                                Add Friend
-                              </motion.button>
+                            {/* User Avatar */}
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-400 to-purple-400 flex items-center justify-center text-white font-semibold text-lg">
+                              {user.name.charAt(0).toUpperCase()}
                             </div>
+
+                            {/* User Info */}
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900">
+                                {user.name}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {user.email}
+                              </div>
+                            </div>
+
+                            {/* Add Friend Button */}
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => request_friend(user._id)}
+                              className="px-3 py-1.5 rounded-full text-white text-sm font-medium bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-sm flex items-center gap-1 transition-all"
+                            >
+                              <Heart size={14} />
+                              Add
+                            </motion.button>
                           </motion.div>
                         ))
                       ) : (
-                        <div className="px-4 py-6 text-center">
-                          <div className="text-purple-400 mb-2">
-                            <Search size={40} className="mx-auto opacity-50" />
-                          </div>
+                        // Empty State Animation
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          transition={{ duration: 0.3 }}
+                          className="px-4 py-6 text-center"
+                        >
+                          <Search
+                            size={40}
+                            className="mx-auto text-purple-400 opacity-50 mb-2"
+                          />
                           <p className="text-gray-500">
                             {searchQuery
                               ? "No results found"
-                              : "Type to search for users"}
+                              : "Start typing to search for users"}
                           </p>
-                        </div>
+                        </motion.div>
                       )}
                     </motion.div>
                   )}
@@ -469,20 +514,6 @@ const NavbarUser = ({ setIsLoggedIn }) => {
                   </AnimatePresence>
                 </div>
 
-                {/* Notifications */}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="p-2 mx-1 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-300 relative"
-                >
-                  <Bell size={20} />
-                  {notificationCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center shadow-lg">
-                      {notificationCount}
-                    </span>
-                  )}
-                </motion.button>
-
                 {/* Profile Menu */}
                 <div className="relative" ref={profileRef}>
                   <motion.button
@@ -509,9 +540,9 @@ const NavbarUser = ({ setIsLoggedIn }) => {
                               <User size={24} />
                             </div>
                             <div className="ml-3">
-                              <div className="font-semibold">John Doe</div>
+                              <div className="font-semibold">{name_Person}</div>
                               <div className="text-xs opacity-80">
-                                john.doe@example.com
+                                {email_Person}
                               </div>
                             </div>
                           </div>
@@ -519,19 +550,14 @@ const NavbarUser = ({ setIsLoggedIn }) => {
 
                         <div className="py-1">
                           <ProfileMenuItem
-                            to="/profile"
+                            to="/chat"
                             icon={<User size={16} />}
-                            text="My Profile"
+                            text="chat"
                           />
                           <ProfileMenuItem
-                            to="/settings"
+                            to="/news"
                             icon={<Settings size={16} />}
-                            text="Settings"
-                          />
-                          <ProfileMenuItem
-                            to="/contacts"
-                            icon={<Users size={16} />}
-                            text="Contacts"
+                            text="news"
                           />
 
                           <div className="border-t border-gray-200 my-1"></div>
@@ -582,6 +608,58 @@ const NavbarUser = ({ setIsLoggedIn }) => {
                     <Search className="text-white" size={16} />
                   </button>
                 </div>
+
+                {/* Mobile Search Results */}
+                <AnimatePresence>
+                  {showSearchResults && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="bg-white rounded-lg mb-4 overflow-hidden text-gray-800"
+                    >
+                      {isSearching ? (
+                        <div className="flex items-center justify-center py-6">
+                          <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                          <span className="ml-2 text-gray-600 text-sm">
+                            Searching...
+                          </span>
+                        </div>
+                      ) : searchResults && searchResults.length > 0 ? (
+                        searchResults.map((user) => (
+                          <div
+                            key={user._id}
+                            className="p-3 border-b border-gray-100 last:border-b-0"
+                          >
+                            <div className="flex items-center">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-400 to-purple-400 flex items-center justify-center text-white font-semibold">
+                                {user.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="ml-3 flex-1">
+                                <div className="font-medium">{user.name}</div>
+                                <div className="text-xs text-gray-500">
+                                  {user.email}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => request_friend(user._id)}
+                                className="px-3 py-1 rounded-full text-white text-xs font-medium bg-gradient-to-r from-indigo-500 to-purple-500"
+                              >
+                                Add
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="py-4 px-3 text-center text-gray-500 text-sm">
+                          {searchQuery
+                            ? "No results found"
+                            : "Start typing to search for users"}
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 <MobileNavItem to="/" icon="🏠" text="Home" />
                 <MobileNavItem to="/chat" icon="💬" text="Chats" />

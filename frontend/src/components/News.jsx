@@ -1,162 +1,159 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 function News() {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [category, setCategory] = useState('general');
+  const [activeFilter, setActiveFilter] = useState("all");
 
-  // Simulated news data - in a real application, you would fetch this from an API
   useEffect(() => {
-    setLoading(true);
-    
-    // Simulate API fetch with timeout
-    setTimeout(() => {
-      const sampleArticles = [
-        {
-          id: 1,
-          title: "New Climate Policy Announced",
-          description: "Government officials unveiled a comprehensive climate policy aimed at reducing carbon emissions by 30% by 2030.",
-          imageUrl: "/api/placeholder/600/300",
-          source: "Climate News",
-          publishedAt: "2025-03-16T09:30:00Z",
-          category: "environment"
-        },
-        {
-          id: 2,
-          title: "Tech Company Releases Revolutionary Product",
-          description: "A leading tech firm has announced a groundbreaking new device that promises to transform how we interact with technology.",
-          imageUrl: "/api/placeholder/600/300",
-          source: "Tech Daily",
-          publishedAt: "2025-03-17T08:45:00Z",
-          category: "technology"
-        },
-        {
-          id: 3,
-          title: "Stock Market Reaches Record High",
-          description: "Global markets surged today, with several indices reaching unprecedented levels amid positive economic forecasts.",
-          imageUrl: "/api/placeholder/600/300",
-          source: "Financial Times",
-          publishedAt: "2025-03-17T10:15:00Z",
-          category: "business"
-        },
-        {
-          id: 4,
-          title: "Major Sports Upset in Championship Game",
-          description: "In a stunning turn of events, the underdog team claimed victory in last night's championship match.",
-          imageUrl: "/api/placeholder/600/300",
-          source: "Sports Network",
-          publishedAt: "2025-03-16T23:50:00Z",
-          category: "sports"
-        },
-        {
-          id: 5,
-          title: "Health Researchers Announce Breakthrough",
-          description: "Scientists have made significant progress in treatment options for a previously incurable condition.",
-          imageUrl: "/api/placeholder/600/300",
-          source: "Health Today",
-          publishedAt: "2025-03-15T14:20:00Z",
-          category: "health"
-        }
-      ];
-      
-      // Filter by category if not 'general'
-      const filteredArticles = category === 'general' 
-        ? sampleArticles 
-        : sampleArticles.filter(article => article.category === category);
-      
-      setArticles(filteredArticles);
-      setLoading(false);
-    }, 1000);
-    
-  }, [category]);
+    const fetchNews = async () => {
+      try {
+        const API_KEY = "b5ebfa0f30854d0396db583bb8149982"; // Use environment variable
+        const url = `https://newsapi.org/v2/top-headlines?country=us&apiKey=${API_KEY}`;
 
-  // Format date for display
-  const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
+        const response = await axios.get(url);
+        setArticles(response.data.articles || []);
+      } catch (err) {
+        setError("Failed to fetch news. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Handle category change
-  const handleCategoryChange = (newCategory) => {
-    setCategory(newCategory);
-  };
+    fetchNews();
+  }, []);
 
-  if (error) {
-    return <div className="p-4 text-red-500">Error loading news: {error}</div>;
-  }
+  // Get unique categories from articles
+  const categories = [
+    "all",
+    ...new Set(
+      articles
+        .map((article) => article.source?.name || "uncategorized")
+        .filter(Boolean)
+    ),
+  ];
+
+  // Filter articles based on selected category
+  const filteredArticles =
+    activeFilter === "all"
+      ? articles
+      : articles.filter((article) => article.source?.name === activeFilter);
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold mb-4 text-center">Daily News</h1>
-        <div className="flex justify-center space-x-4 mb-4">
-          <button 
-            onClick={() => handleCategoryChange('general')}
-            className={`px-4 py-2 rounded ${category === 'general' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-          >
-            All
-          </button>
-          <button 
-            onClick={() => handleCategoryChange('technology')}
-            className={`px-4 py-2 rounded ${category === 'technology' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-          >
-            Technology
-          </button>
-          <button 
-            onClick={() => handleCategoryChange('business')}
-            className={`px-4 py-2 rounded ${category === 'business' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-          >
-            Business
-          </button>
-          <button 
-            onClick={() => handleCategoryChange('sports')}
-            className={`px-4 py-2 rounded ${category === 'sports' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-          >
-            Sports
-          </button>
-          <button 
-            onClick={() => handleCategoryChange('health')}
-            className={`px-4 py-2 rounded ${category === 'health' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-          >
-            Health
-          </button>
-          <button 
-            onClick={() => handleCategoryChange('environment')}
-            className={`px-4 py-2 rounded ${category === 'environment' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-          >
-            Environment
-          </button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-blue-900 text-white p-6">
+      {/* Glass morphism header */}
+      <header className="bg-white bg-opacity-10 backdrop-blur-lg rounded-xl p-6 mb-8 shadow-lg border border-white border-opacity-20">
+        <h1 className="text-4xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
+          Welcome to Dropchat News
+        </h1>
+        <p className="text-center text-blue-200 mt-2">
+          Stay informed with the latest News and Headlines
+        </p>
       </header>
 
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="text-xl">Loading news...</div>
+      {/* Loading and error states */}
+      {loading && (
+        <div className="flex justify-center my-12">
+          <div className="w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin"></div>
         </div>
-      ) : articles.length === 0 ? (
-        <div className="text-center text-gray-500">No articles found for this category.</div>
-      ) : (
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {articles.map((article) => (
-            <div key={article.id} className="border rounded-lg overflow-hidden shadow-lg bg-white">
-              <img 
-                src={article.imageUrl} 
-                alt={article.title} 
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-4">
-                <h2 className="text-xl font-semibold mb-2">{article.title}</h2>
-                <p className="text-gray-700 mb-4">{article.description}</p>
-                <div className="flex justify-between items-center text-sm text-gray-500">
-                  <span>{article.source}</span>
-                  <span>{formatDate(article.publishedAt)}</span>
-                </div>
-              </div>
-            </div>
+      )}
+
+      {error && (
+        <div className="bg-red-500 bg-opacity-20 p-4 rounded-lg text-center mx-auto max-w-md">
+          <p className="text-red-200">{error}</p>
+        </div>
+      )}
+
+      {/* Category filters */}
+      {!loading && !error && articles.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-6 justify-center">
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => setActiveFilter(category)}
+              className={`px-4 py-2 rounded-full text-sm transition-all duration-300 ${
+                activeFilter === category
+                  ? "bg-blue-500 text-white shadow-lg shadow-blue-500/30"
+                  : "bg-white bg-opacity-10 hover:bg-opacity-20"
+              }`}
+            >
+              {category.charAt(0).toUpperCase() + category.slice(1)}
+            </button>
           ))}
         </div>
       )}
+
+      {/* No articles message */}
+      {!loading && !error && articles.length === 0 && (
+        <div className="text-center py-16">
+          <p className="text-xl text-blue-200">No news articles available.</p>
+        </div>
+      )}
+
+      {/* News grid */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {filteredArticles.map((article, index) => (
+          <div
+            key={index}
+            className="bg-white bg-opacity-5 backdrop-blur-sm rounded-xl overflow-hidden transition-all duration-300 hover:bg-opacity-10 hover:scale-102 hover:shadow-xl border border-white border-opacity-10"
+          >
+            {article.urlToImage ? (
+              <img
+                src={article.urlToImage}
+                alt={article.title}
+                className="w-full h-48 object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "/api/placeholder/400/200";
+                }}
+              />
+            ) : (
+              <div className="w-full h-48 bg-gradient-to-r from-blue-900 to-purple-900 flex items-center justify-center">
+                <span className="text-blue-200 text-opacity-50">
+                  No image available
+                </span>
+              </div>
+            )}
+
+            <div className="p-6">
+              {article.source?.name && (
+                <span className="inline-block px-3 py-1 bg-blue-600 bg-opacity-30 rounded-full text-xs text-blue-200 mb-3">
+                  {article.source.name}
+                </span>
+              )}
+
+              <h3 className="text-xl font-bold mb-2 line-clamp-2">
+                {article.title}
+              </h3>
+
+              <p className="text-gray-300 line-clamp-3 mb-4">
+                {article.description || "No description available."}
+              </p>
+
+              {article.publishedAt && (
+                <p className="text-xs text-blue-300 mb-4">
+                  {new Date(article.publishedAt).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </p>
+              )}
+
+              <a
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium transition-all hover:shadow-lg hover:shadow-blue-500/20"
+              >
+                Read Article
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -17,7 +17,7 @@ function HomePage() {
       {/* Hero Section */}
       <section className="hero">
         <div className="hero-content">
-          <h1 className="hero-title">Welcome to Web Chat</h1>
+          <h1 className="hero-title">Welcome to DropChat</h1>
           <p className="hero-subtitle">
             Connect with friends, join groups, read the latest news, and chat
             seamlessly online.

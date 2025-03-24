@@ -5,10 +5,9 @@ const mongoose = require("mongoose");
 const MessageSchema = new mongoose.Schema({
     sender: { type: mongoose.Schema.Types.ObjectId }, // Sender of the message
     group: { type: mongoose.Schema.Types.ObjectId }, // Group ID
-    massage: { type: Strin }, // Message text
-    attachments: [{ type: String }], // URLs of attachments (optional)
+    message: { type: String }, // Message text
     createdAt: { type: Date, default: Date.now },
 });
 
-const Message = mongoose.model("Message", MessageSchema);
-module.exports = Message;
+const MessageGroup = mongoose.model("MessageGroup", MessageSchema);
+module.exports = MessageGroup;

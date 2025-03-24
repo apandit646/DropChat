@@ -4,6 +4,7 @@ const User = require('../models/userModel');
 const Group = require('../models/groupSchema');
 const { authenticateToken } = require('../auth/auth');
 const mongoose = require("mongoose"); // Fixed import
+const MessageGroup = require("../models/group_message_schema");
 dotenv.config();
 const router = express.Router();
 // ✅ get all frinds by user id a fro friend request 
@@ -51,5 +52,32 @@ router.get("/getFriendGroupList", authenticateToken, async (req, res) => {
         res.status(500).json({ error: "Error fetching groups" });
     }
 });
+router.get("/chatGroupMessages", authenticateToken, async (req, res) => {
+    try {
+        const groupMessage = req.query.receiver; // Fetch from query parameters
+        const sendMessage = req.user.id;
+
+        if (!groupMessage) {
+            return res.status(400).json({ error: "Receiver ID (Group ID) is required" });
+        }
+
+        const senderId = new mongoose.Types.ObjectId(sendMessage);
+        const groupId = new mongoose.Types.ObjectId(groupMessage);
+
+        console.log("Receiver ID:", groupId);
+        console.log("Sender ID:", senderId);
+
+        const messages = await MessageGroup.find({
+            group: groupId
+        }).sort({ createdAt: 1 });
+
+        res.json(messages);
+    } catch (error) {
+        console.error("Error fetching messages:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+
 
 module.exports = router;

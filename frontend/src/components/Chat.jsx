@@ -1,16 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import {
-  Send,
-  Users,
-  MessageCircle,
-  Settings,
-  Search,
-  Phone as PhoneIcon,
-  Video,
-  Smile,
-  Paperclip,
-  ArrowLeft,
-} from "lucide-react";
+import { Send, Users, MessageCircle, Search, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import io from "socket.io-client";
 import image from "../img/avatar.jpg";
@@ -210,13 +199,6 @@ const Chat = () => {
                   <h2 className="font-bold">{userName || "Your Name"}</h2>
                 </div>
                 <div className="flex space-x-2">
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-1 rounded-full hover:bg-white hover:bg-opacity-20"
-                  >
-                    <Settings size={18} />
-                  </motion.button>
                   {isMobileView && (
                     <motion.button
                       whileHover={{ scale: 1.1 }}
@@ -359,23 +341,6 @@ const Chat = () => {
                   <span className="text-xs text-green-500">Online</span>
                 </div>
               </div>
-
-              <div className="flex space-x-2">
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="p-2 rounded-full text-indigo-600 hover:bg-indigo-50"
-                >
-                  <PhoneIcon size={20} />
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="p-2 rounded-full text-indigo-600 hover:bg-indigo-50"
-                >
-                  <Video size={20} />
-                </motion.button>
-              </div>
             </motion.div>
 
             {/* Messages */}
@@ -443,13 +408,6 @@ const Chat = () => {
               className="p-4 bg-white border-t border-gray-200 shadow-md"
             >
               <div className="flex items-center space-x-2">
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-full"
-                >
-                  <Paperclip size={20} />
-                </motion.button>
                 <input
                   type="text"
                   value={newMessage}
@@ -458,13 +416,6 @@ const Chat = () => {
                   placeholder="Type a message..."
                   className="flex-1 p-3 bg-gray-100 border border-transparent rounded-full focus:outline-none focus:border-indigo-300 focus:bg-white transition-colors"
                 />
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-full"
-                >
-                  <Smile size={20} />
-                </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}

@@ -11,6 +11,10 @@ import {
   Users,
   Settings,
   LogOut,
+  Home,
+  MessageSquare,
+  PieChart,
+  Group,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import io from "socket.io-client";
@@ -397,26 +401,18 @@ const NavbarUser = ({ setIsLoggedIn }) => {
 
               {/* Desktop Navigation */}
               <div className="hidden md:flex md:items-center md:space-x-1">
-                <NavItem
-                  to="/"
-                  icon={<span className="text-xl">🏠</span>}
-                  text="Home"
-                />
+                <NavItem to="/" icon={<Home size={20} />} text="Home" />
                 <NavItem
                   to="/chat"
-                  icon={<span className="text-xl">💬</span>}
+                  icon={<MessageSquare size={20} />}
                   text="Chats"
                 />
                 <NavItem
                   to="/group-chat"
-                  icon={<span className="text-xl">👥</span>}
+                  icon={<Group size={20} />}
                   text="Groups"
                 />
-                <NavItem
-                  to="/news"
-                  icon={<span className="text-xl">📊</span>}
-                  text="News"
-                />
+                <NavItem to="/news" icon={<PieChart size={20} />} text="News" />
 
                 {/* Friend Requests */}
                 <div className="relative" ref={requestRef}>

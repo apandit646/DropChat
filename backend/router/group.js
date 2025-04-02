@@ -45,6 +45,11 @@ router.get("/getFriendGroupList", authenticateToken, async (req, res) => {
         if (!user) return res.status(400).json({ error: "User not found" });
         const id_user = new mongoose.Types.ObjectId(user.id)
         const groups = await Group.find({ "members.userId": id_user })
+            .sort({ messagesTime: -1 }) // Sort by latest message time (newest first)
+            .populate("members.userId", "name email")
+            .populate("admins.adminId", "name email")
+            .lean();
+
         console.log(groups, ":::::::::::::::::::::::::::::")
         res.status(200).json(groups);
     } catch (error) {

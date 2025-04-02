@@ -79,13 +79,14 @@ const Chat = () => {
   }
   useEffect(() => {
     getFriendsList();
-  }, []);
+  }, [setNewMessage]);
 
   // Listen for Incoming Messages via Socket
   useEffect(() => {
     if (!socket) return;
 
     const messageHandler = (serverMsg) => {
+      console.log("Received message:", serverMsg);
       const transformedMsg = {
         text: serverMsg.message,
         sender: serverMsg.sender,
@@ -291,7 +292,10 @@ const Chat = () => {
                             transition={{ repeat: 0 }}
                             className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-indigo-500 rounded-full"
                           >
-                            2
+                            {
+                              messages.filter((m) => m.sender === friend._id)
+                                .length
+                            }
                           </motion.span>
                         </div>
                       </div>

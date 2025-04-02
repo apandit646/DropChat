@@ -32,46 +32,28 @@ const GroupChat = () => {
   const [isMobileView, setIsMobileView] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const messagesEndRef = useRef(null);
+  // Fetch Friends for Group Creation
+  async function getFriendsList() {
+    try {
+      const res = await fetch("http://127.0.0.1:5000/getFriendList", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-  // Initialize Socket Connection
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setFriends(data);
+      }
+    } catch (error) {
+      console.error("Error fetching friends:", error);
+    }
+  }
   useEffect(() => {
-    const newSocket = io("http://127.0.0.1:5000", {
-      auth: { token },
-      transports: ["websocket"],
-      withCredentials: true,
-    });
-
-    setSocket(newSocket);
-
-    newSocket.on("res_hello", (data) => {
-      console.log(data, "Connected to server");
-    });
-
-    return () => {
-      newSocket.disconnect();
-    };
-  }, [friends]);
-
-  // Handle responsive view
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobileView(window.innerWidth < 768);
-      setShowSidebar(window.innerWidth >= 768);
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
-
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
+    getFriendsList();
+  }, [newMessage, selectedGroup, setNewMessage, setMessages]);
   // Fetch Groups List
   async function getGroupsList() {
     try {
@@ -94,30 +76,46 @@ const GroupChat = () => {
   }
   useEffect(() => {
     getGroupsList();
-  }, []);
+  }, [newMessage, selectedGroup, setNewMessage, setMessages]);
 
-  // Fetch Friends for Group Creation
-  async function getFriendsList() {
-    try {
-      const res = await fetch("http://127.0.0.1:5000/getFriendList", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setFriends(data);
-      }
-    } catch (error) {
-      console.error("Error fetching friends:", error);
-    }
-  }
+  // Initialize Socket Connection
   useEffect(() => {
-    getFriendsList();
+    const newSocket = io("http://127.0.0.1:5000", {
+      auth: { token },
+      transports: ["websocket"],
+      withCredentials: true,
+    });
+
+    setSocket(newSocket);
+
+    newSocket.on("res_hello", (data) => {
+      console.log(data, "Connected to server");
+    });
+
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [token]);
+
+  // Handle responsive view
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth < 768);
+      setShowSidebar(window.innerWidth >= 768);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   // Listen for Incoming Messages via Socket
   useEffect(() => {
@@ -125,7 +123,7 @@ const GroupChat = () => {
 
     const messageHandler = (serverMsg) => {
       if (!serverMsg || !serverMsg._id) return; // Ensure message is valid
-
+      console.log(serverMsg, "Received message from server");
       const transformedMsg = {
         text: serverMsg.message || "No message",
         sender: serverMsg.sender || "Unknown",
@@ -407,7 +405,12 @@ const GroupChat = () => {
                             transition={{ repeat: 0 }}
                             className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-indigo-500 rounded-full"
                           >
-                            3
+                            {
+                              messages.filter(
+                                (m) =>
+                                  m.sender === group.members.map((g) => g.ma)
+                              ).length
+                            }
                           </motion.span>
                         </div>
                       </div>

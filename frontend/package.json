@@ -14,7 +14,7 @@
     "axios": "^1.7.9",
     "bootstrap": "^5.3.3",
     "firebase": "^11.3.0",
-    "framer-motion": "^12.5.0",
+    "framer-motion": "^12.6.2",
     "lucide-react": "^0.475.0",
     "nativewind": "^4.1.23",
     "newsapi": "^2.4.1",

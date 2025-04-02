@@ -15,7 +15,8 @@ const GroupSchema = new mongoose.Schema({
     name: { type: String, required: true }, // Group name
     admins: [adminSchema], // Group admins
     members: [memberSchema], // Array of user objects
-}, { timestamps: true }); // Auto timestamps
+    messagesTime: { type: Date, default: Date.now } // Store last message time, with default value
+}, { timestamps: true }); // Auto timestamps for createdAt & updatedAt
 
 const Group = mongoose.model("Group", GroupSchema);
 module.exports = Group;

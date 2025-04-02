@@ -3,7 +3,9 @@ const jwt = require("jsonwebtoken");
 const User = require("./models/userModel");
 const Message = require("./models/chatSchema");
 const MessageGroup = require("./models/group_message_schema");
+const Group = require("./models/groupSchema");
 const mongoose = require("mongoose");
+const { time } = require("console");
 
 const secretKey = crypto
   .createHash("sha256")
@@ -39,7 +41,6 @@ const socketHandler = (io) => {
         userSockets.set(socket.user.id, new Set());
       }
       userSockets.get(socket.user.id).add(socket.id);
-
     }
 
     // 🔹 Find user by email event
@@ -60,6 +61,8 @@ const socketHandler = (io) => {
         const newMessage = new Message({ sender, receiver, message });
         await newMessage.save();
 
+
+
         // Send message to sender
         socket.emit("message", newMessage);
 
@@ -76,6 +79,7 @@ const socketHandler = (io) => {
     socket.on("joinGroup", async (groupId) => {
       if (!groupSockets.has(groupId)) {
         groupSockets.set(groupId, new Set());
+        console.log(`Group-------------- ${groupId} created in memory`);
       }
       groupSockets.get(groupId).add(socket.user.id);
 
@@ -84,12 +88,11 @@ const socketHandler = (io) => {
 
     // 🔹 Handle sending group messages
     socket.on("sendGroupMessage", async (data) => {
-      const { sender, group, message } = data;
+      const { sender, group, message, messageTime } = data;
 
       try {
         const newMessage = new MessageGroup({ sender, group, message });
         await newMessage.save();
-
         // Send message back to sender
         socket.emit("messageGroup", newMessage);
 
@@ -97,12 +100,20 @@ const socketHandler = (io) => {
         if (groupSockets.has(group)) {
           groupSockets.get(group).forEach((userId) => {
             if (userSockets.has(userId)) {
+              console.log("Group message sent to userId:", userId);
               userSockets.get(userId).forEach((socketId) => {
+                console.log("Group message sent to socketId:", socketId);
                 io.to(socketId).emit("messageGroup", newMessage);
               });
             }
           });
         }
+        const groupUpdate = await Group.findByIdAndUpdate(
+          group,
+          { messagesTime: Date.now() },  // Epoch time in milliseconds
+          { new: true }
+        );
+
       } catch (error) {
         console.error("Error sending message:", error);
       }

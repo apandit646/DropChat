@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -94,7 +94,7 @@ const Phone = ({ setIsLoggedIn }) => {
 
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/user/details ", {
+      const response = await fetch("http://localhost:5000/user/details", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

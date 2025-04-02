@@ -60,9 +60,6 @@ const socketHandler = (io) => {
       try {
         const newMessage = new Message({ sender, receiver, message });
         await newMessage.save();
-
-
-
         // Send message to sender
         socket.emit("message", newMessage);
 

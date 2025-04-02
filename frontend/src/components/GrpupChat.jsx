@@ -13,7 +13,6 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import io from "socket.io-client";
 import image from "../img/group.png";
-
 const token = localStorage.getItem("token");
 const userId = localStorage.getItem("userId");
 const userName = localStorage.getItem("name");
@@ -32,6 +31,7 @@ const GroupChat = () => {
   const [isMobileView, setIsMobileView] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const messagesEndRef = useRef(null);
+
   // Fetch Friends for Group Creation
   async function getFriendsList() {
     try {
@@ -76,7 +76,7 @@ const GroupChat = () => {
   }
   useEffect(() => {
     getGroupsList();
-  }, [newMessage, selectedGroup, setNewMessage, setMessages]);
+  }, []);
 
   // Initialize Socket Connection
   useEffect(() => {
@@ -95,7 +95,7 @@ const GroupChat = () => {
     return () => {
       newSocket.disconnect();
     };
-  }, [token]);
+  }, []);
 
   // Handle responsive view
   useEffect(() => {
@@ -121,9 +121,10 @@ const GroupChat = () => {
   useEffect(() => {
     if (!socket) return;
 
-    const messageHandler = (serverMsg) => {
+    const messageHandler = async (serverMsg) => {
       if (!serverMsg || !serverMsg._id) return; // Ensure message is valid
       console.log(serverMsg, "Received message from server");
+      await getGroupsList();
       const transformedMsg = {
         text: serverMsg.message || "No message",
         sender: serverMsg.sender || "Unknown",
@@ -198,7 +199,6 @@ const GroupChat = () => {
 
     setNewMessage("");
   };
-
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
       handleSendMessage();

@@ -19,6 +19,29 @@ const Chat = () => {
   const [showSidebar, setShowSidebar] = useState(true);
   const messagesEndRef = useRef(null);
 
+  // Fetch Friends List
+  async function getFriendsList() {
+    try {
+      const res = await fetch("http://127.0.0.1:5000/getFriendList", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setFriends(data);
+      }
+    } catch (error) {
+      console.error("Error fetching friends:", error);
+    }
+  }
+  useEffect(() => {
+    getFriendsList();
+  }, [setNewMessage]);
+
   // Initialize Socket Connection
   useEffect(() => {
     const newSocket = io("http://127.0.0.1:5000", {
@@ -58,35 +81,13 @@ const Chat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Fetch Friends List
-  async function getFriendsList() {
-    try {
-      const res = await fetch("http://127.0.0.1:5000/getFriendList", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setFriends(data);
-      }
-    } catch (error) {
-      console.error("Error fetching friends:", error);
-    }
-  }
-  useEffect(() => {
-    getFriendsList();
-  }, [setNewMessage]);
-
   // Listen for Incoming Messages via Socket
   useEffect(() => {
     if (!socket) return;
 
-    const messageHandler = (serverMsg) => {
+    const messageHandler = async (serverMsg) => {
       console.log("Received message:", serverMsg);
+      await getFriendsList();
       const transformedMsg = {
         text: serverMsg.message,
         sender: serverMsg.sender,

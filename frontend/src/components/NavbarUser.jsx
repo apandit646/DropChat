@@ -197,7 +197,12 @@ const NavbarUser = ({ setIsLoggedIn }) => {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || "Failed to send friend request");
+        throw new Error(data.error || "Failed to send friend request");
+      }
+
+      if (data.message.includes("already friends")) {
+        showToast("You have already sent a friend request.");
+        return;
       }
 
       showToast(data.message);

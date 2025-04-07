@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { Send, Users, Search, X, Plus, Smile, ArrowLeft } from "lucide-react";
+import { Send, Users, Search, X, Plus, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import io from "socket.io-client";
 import image from "../img/group.png";
 const token = localStorage.getItem("token");
 const userId = localStorage.getItem("userId");
 const userName = localStorage.getItem("name");
+import GroupMembersPopup from "../common/GroupMembersPopup";
 
 const GroupChat = () => {
   const [socket, setSocket] = useState(null);
@@ -197,7 +198,7 @@ const GroupChat = () => {
           unRead: unReadMessage.map((msg) => msg._id),
         });
       }
-      setGroupName([...groupName, (group.deliveredCount = 0)]);
+      setGroupName([...groupName]);
 
       setMessages(transformedMessages); // Moved outside the if block
     } catch (error) {
@@ -281,61 +282,6 @@ const GroupChat = () => {
     return (
       timestamp ||
       new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    );
-  };
-
-  // grop mememer popup
-  const GroupMembersPopup = ({ members, onAddMember, onClose }) => {
-    const popupRef = useRef(null);
-
-    // Close on outside click
-    useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (popupRef.current && !popupRef.current.contains(event.target)) {
-          onClose();
-        }
-      };
-
-      document.addEventListener("mousedown", handleClickOutside);
-      return () =>
-        document.removeEventListener("mousedown", handleClickOutside);
-    }, [onClose]);
-
-    return (
-      <div
-        ref={popupRef}
-        className="absolute top-12 right-0 bg-white shadow-xl rounded-xl p-4 w-72 z-50 border border-gray-200"
-      >
-        <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
-          Group Members
-        </h3>
-
-        <ul className="max-h-60 overflow-y-auto space-y-2 mb-4 pr-1">
-          {members.length > 0 ? (
-            members.map((member, index) => (
-              <li
-                key={index}
-                className="flex items-center space-x-2 text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md"
-              >
-                <div className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs font-semibold">
-                  {member.userId.name[0]}
-                </div>
-                <span>{member.userId.name}</span>
-              </li>
-            ))
-          ) : (
-            <p className="text-sm text-gray-500">No members found</p>
-          )}
-        </ul>
-
-        <button
-          onClick={onAddMember}
-          className="w-full mt-2 flex items-center justify-center bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition"
-        >
-          <Plus size={16} className="mr-2" />
-          Add Member
-        </button>
-      </div>
     );
   };
 
@@ -462,17 +408,24 @@ const GroupChat = () => {
                           </span>
                         </div>
                         <div className="flex justify-between items-end">
-                          <p className="text-sm text-gray-500 truncate w-48">
+                          <p className="text-sm text-gray-600 truncate w-48">
                             {messages.find((m) => m.sender === group._id)
-                              ?.text || "No messages yet"}
+                              ?.text || (
+                              <span className="italic text-gray-400">
+                                No messages yet
+                              </span>
+                            )}
                           </p>
-                          <motion.span
-                            animate={{ scale: [1, 1.2, 1] }}
-                            transition={{ repeat: 0 }}
-                            className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-indigo-500 rounded-full"
-                          >
-                            {group.deliveredCount}
-                          </motion.span>
+
+                          {group.deliveredCount > 0 && (
+                            <motion.span
+                              animate={{ scale: [1, 1.2, 1] }}
+                              transition={{ duration: 0.3 }}
+                              className="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-indigo-500 rounded-full"
+                            >
+                              {group.deliveredCount}
+                            </motion.span>
+                          )}
                         </div>
                       </div>
                     </motion.div>
@@ -537,7 +490,7 @@ const GroupChat = () => {
                 {showPopup && (
                   <GroupMembersPopup
                     members={selectedGroup.members}
-                    onAddMember={() => console.log("Add Member Clicked")}
+                    onAddMember={() => alert("Add Member Clicked")}
                     onClose={() => setShowPopup(false)}
                   />
                 )}
@@ -803,7 +756,7 @@ const GroupChat = () => {
                   whileTap={{ scale: 0.98 }}
                   onClick={handleGroupSubmit}
                   className="flex-1 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg font-medium shadow-md hover:shadow-lg disabled:opacity-50"
-                  disabled={!groupName.trim() || selectedMembers.length === 0}
+                  disabled={!groupName || selectedMembers.length === 0}
                 >
                   Create Group
                 </motion.button>

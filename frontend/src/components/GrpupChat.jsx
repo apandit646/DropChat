@@ -21,7 +21,7 @@ const GroupChat = () => {
   const [isMobileView, setIsMobileView] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const messagesEndRef = useRef(null);
-  const [unreadCounts, setUnreadCounts] = useState({});
+
   // Fetch Friends for Group Creation
   async function getFriendsList() {
     try {
@@ -56,7 +56,7 @@ const GroupChat = () => {
       });
 
       const data = await res.json();
-      console.log("group", data);
+      console.log("fetching group data with sorthed arry and count : 🧵", data);
       if (Array.isArray(data)) {
         setGroups(data);
       }
@@ -113,8 +113,9 @@ const GroupChat = () => {
 
     const messageHandler = async (serverMsg) => {
       if (!serverMsg || !serverMsg._id) return; // Ensure message is valid
-      console.log(serverMsg, "Received message from server");
       await getGroupsList();
+      console.log(serverMsg, "Received New message from server");
+
       const transformedMsg = {
         text: serverMsg.message || "No message",
         sender: serverMsg.sender || "Unknown",
@@ -138,14 +139,26 @@ const GroupChat = () => {
     };
   }, [socket]);
 
+  // sendig groupid to backend
+  useEffect(() => {
+    if (!socket || groups.length === 0) return;
+
+    groups.forEach((group) => {
+      socket.emit("joinGroup", group._id);
+    });
+
+    console.log(
+      "Sent group IDs to server:",
+      groups.map((g) => g._id)
+    );
+  }, [socket, groups]);
   // Fetch Group Messages when Group is Selected
   const getChatMessages = async (group) => {
     setSelectedGroup(group);
     if (isMobileView) {
       setShowSidebar(false);
     }
-
-    socket.emit("joinGroup", group._id);
+    // socket.emit("joinGroup", group._id);
 
     try {
       const res = await fetch(
@@ -171,7 +184,21 @@ const GroupChat = () => {
         _id: msg._id,
       }));
 
-      setMessages(transformedMessages);
+      const unReadMessage = data.filter((msg) =>
+        msg.status?.some((entry) => entry.userId === userId)
+      );
+
+      console.log(unReadMessage, "Filtered messages where user has status");
+
+      const unreadCount = unReadMessage.length;
+      if (unreadCount > 0) {
+        await socket.emit("markAsReadMessage", {
+          unRead: unReadMessage.map((msg) => msg._id),
+        });
+      }
+      setGroupName([...groupName, (group.deliveredCount = 0)]);
+
+      setMessages(transformedMessages); // Moved outside the if block
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
@@ -388,12 +415,7 @@ const GroupChat = () => {
                             transition={{ repeat: 0 }}
                             className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-indigo-500 rounded-full"
                           >
-                            {
-                              messages.filter(
-                                (m) =>
-                                  m.sender === group.members.map((g) => g.ma)
-                              ).length
-                            }
+                            {group.deliveredCount}
                           </motion.span>
                         </div>
                       </div>

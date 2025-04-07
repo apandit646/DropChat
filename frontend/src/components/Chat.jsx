@@ -155,14 +155,14 @@ const Chat = () => {
 
       if (unreadMessages.length > 0) {
         try {
-          socket.emit("markAsRead", {
+          await socket.emit("markAsRead", {
             unreadMessages: unreadMessages.map((msg) => msg._id),
           });
         } catch (error) {
           console.error("Error marking messages as read:", error);
         }
       }
-      await getFriendsList();
+      setFriends([...friends], (friend.deliveredMessageCount = 0));
     } catch (error) {
       console.error("Error fetching messages:", error);
     }

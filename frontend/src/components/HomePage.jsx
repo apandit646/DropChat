@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import "./HomePage.css"; // Importing the external CSS file
+import chatImg from "../img/chat.webp"; // Importing the chat image
 
 function HomePage() {
   const navigate = useNavigate();
@@ -17,6 +18,17 @@ function HomePage() {
       {/* Hero Section */}
       <section className="hero">
         <div className="hero-content">
+          <img
+            src={chatImg}
+            alt="chat"
+            style={{
+              width: "300px",
+              height: "300px",
+              marginLeft: "187px",
+              backgroundColor: "linear-gradient(to bottom, #f9fafb, #e5e7eb)",
+            }}
+          />
+
           <h1 className="hero-title">Welcome to DropChat</h1>
           <p className="hero-subtitle">
             Connect with friends, join groups, read the latest news, and chat

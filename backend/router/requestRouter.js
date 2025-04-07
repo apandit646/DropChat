@@ -163,6 +163,7 @@ router.get('/getFriendList', authenticateToken, async (req, res) => {
         deliveredMessages.forEach(msg => {
             messageMap[msg._id.toString()] = msg.count;
         });
+        console.log(messageMap, "MMMMMMMMMMMMMMMMMMMMMMMMMMM")
 
         // 6. Attach deliveredMessageCount to each friend
         const friendsWithCount = friends.map(friend => {

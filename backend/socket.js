@@ -86,13 +86,15 @@ const socketHandler = (io) => {
     // 🔹 Handle sending group messages
     socket.on("sendGroupMessage", async (data) => {
       const { sender, group, message, messageTime } = data;
+      const groupMember = await Group.findById(group).populate("members.userId").select("members.userId").lean();
+      console.log("Group members:", groupMember);
+      const filterGroupMember = groupMember.members.filter((member) => member.userId._id.toString() !== sender);
+
+
 
       try {
-        const newMessage = new MessageGroup({ sender, group, message });
+        const newMessage = new MessageGroup({ sender, group, message, status: filterGroupMember });
         await newMessage.save();
-        // Send message back to sender
-        socket.emit("messageGroup", newMessage);
-
         // Broadcast to all group members
         if (groupSockets.has(group)) {
           groupSockets.get(group).forEach((userId) => {
@@ -116,19 +118,6 @@ const socketHandler = (io) => {
       }
     });
 
-    // 🔹 Handle user disconnection
-    socket.on("disconnect", () => {
-      console.log("Client disconnected", socket.user);
-
-      if (socket.user && userSockets.has(socket.user.id)) {
-        const sockets = userSockets.get(socket.user.id);
-        sockets.delete(socket.id);
-
-        if (sockets.size === 0) {
-          userSockets.delete(socket.user.id);
-        }
-      }
-    });
 
 
     //read message status
@@ -150,6 +139,40 @@ const socketHandler = (io) => {
         }
       });
     });
+
+
+    //handle group read group message status
+    socket.on("markAsReadMessage", async (data) => {
+      const { unRead } = data;
+      console.log("Read message ID..................................:", unRead);
+      unRead.map(async (messageId) => {
+        try {
+          const updatedMessage = await MessageGroup.updateOne(
+            { _id: messageId }, // messageId should be in a filter object
+            { $pull: { status: { userId: socket.user.id } } }
+          );
+          console.log("Updated message status:", updatedMessage);
+        } catch (error) {
+          console.error("Error updating message status:", error);
+        }
+      });
+    })
+
+
+    // 🔹 Handle user disconnection
+    socket.on("disconnect", () => {
+      console.log("Client disconnected", socket.user);
+
+      if (socket.user && userSockets.has(socket.user.id)) {
+        const sockets = userSockets.get(socket.user.id);
+        sockets.delete(socket.id);
+
+        if (sockets.size === 0) {
+          userSockets.delete(socket.user.id);
+        }
+      }
+    });
+
   });
 };
 

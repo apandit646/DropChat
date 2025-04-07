@@ -38,25 +38,62 @@ router.post("/createGroup", authenticateToken, async (req, res) => {
         res.status(500).json({ error: "Error creating group" });
     }
 });
-// ✅ get all groups by user id
 router.get("/getFriendGroupList", authenticateToken, async (req, res) => {
     try {
         const user = req.user;
         if (!user) return res.status(400).json({ error: "User not found" });
-        const id_user = new mongoose.Types.ObjectId(user.id)
+
+        const id_user = new mongoose.Types.ObjectId(user.id);
+
+        // Fetch all groups where the user is a member
         const groups = await Group.find({ "members.userId": id_user })
-            .sort({ messagesTime: -1 }) // Sort by latest message time (newest first)
+            .sort({ messagesTime: -1 })
             .populate("members.userId", "name email")
             .populate("admins.adminId", "name email")
             .lean();
 
-        console.log(groups, ":::::::::::::::::::::::::::::")
-        res.status(200).json(groups);
+        const groupIds = groups.map(group => group._id);
+
+        // Aggregate to get delivered message counts per group
+        const deliveredMessages = await MessageGroup.aggregate([
+            {
+                $match: {
+                    group: { $in: groupIds },
+                    status: {
+                        $elemMatch: { userId: id_user }
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: "$group",
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+        console.log(deliveredMessages, "delivered message count");
+        // Map deliveredMessages to an object for easier lookup
+        const deliveredMap = {};
+        deliveredMessages.forEach(item => {
+            deliveredMap[item._id.toString()] = item.count;
+        });
+
+        // Attach count to each group
+        const groupsWithCounts = groups.map(group => ({
+            ...group,
+            deliveredCount: deliveredMap[group._id.toString()] || 0
+        }));
+
+        console.log(groupsWithCounts, "taking out list of group ");
+        res.status(200).json(groupsWithCounts);
     } catch (error) {
         console.error("Error fetching groups:", error);
         res.status(500).json({ error: "Error fetching groups" });
     }
 });
+
+
+
 router.get("/chatGroupMessages", authenticateToken, async (req, res) => {
     try {
         const groupMessage = req.query.receiver; // Fetch from query parameters

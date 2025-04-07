@@ -34,5 +34,29 @@ router.get("/chatMessages", authenticateToken, async (req, res) => {
     }
 });
 
+router.delete("/chat/deleteMessage", authenticateToken, async (req, res) => {
+    try {
+        // console.log("Delete message route hit");
+
+        const { messageId } = req.body; // destructure messageId from request body
+        // console.log("Message ID:", messageId);
+
+        if (!messageId) {
+            return res.status(400).json({ success: false, message: "Message ID is required" });
+        }
+
+        const deletedMessage = await Message.findByIdAndDelete(messageId);
+
+        if (!deletedMessage) {
+            return res.status(404).json({ success: false, message: "Message not found" });
+        }
+
+        res.json({ success: true, message: "Message deleted successfully", deletedMessage });
+    } catch (error) {
+        console.error("Error deleting message:", error);
+        res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+});
+
 
 module.exports = router;

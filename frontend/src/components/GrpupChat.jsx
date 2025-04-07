@@ -21,7 +21,7 @@ const GroupChat = () => {
   const [isMobileView, setIsMobileView] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const messagesEndRef = useRef(null);
-
+  const [unreadCounts, setUnreadCounts] = useState({});
   // Fetch Friends for Group Creation
   async function getFriendsList() {
     try {

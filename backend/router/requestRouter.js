@@ -4,6 +4,7 @@ const User = require('../models/userModel');
 const Requestfriend = require('../models/requestFriend');
 const { authenticateToken } = require('../auth/auth');
 const mongoose = require("mongoose"); // Fixed import
+const Message = require('../models/chatSchema'); // Import the Message model
 
 dotenv.config();
 
@@ -123,7 +124,7 @@ router.get('/getFriendList', authenticateToken, async (req, res) => {
     try {
         const userId = new mongoose.Types.ObjectId(req.user.id);
 
-        // Fetch accepted friend requests where the user is either 'from' or 'to'
+        // 1. Fetch accepted friend requests where the user is either 'from' or 'to'
         const requestFriendslist = await Requestfriend.find({
             $or: [{ from: userId }, { to: userId }],
             status: "accepted"
@@ -133,21 +134,46 @@ router.get('/getFriendList', authenticateToken, async (req, res) => {
             return res.status(404).json({ message: "No friends found" });
         }
 
-        console.log(requestFriendslist, "requestFriendslist ################################");
-
-        // Extract friend IDs
+        // 2. Extract friend IDs
         const friendIds = requestFriendslist.map(req =>
             req.from.equals(userId) ? req.to : req.from
         );
 
-        console.log(friendIds, "friendIds >>>>>>>>>>>>>>>>>>>>>>>>>");
+        // 3. Fetch user details of friends (exclude sensitive fields)
+        const friends = await User.find({ _id: { $in: friendIds } }).select("-password -token");
 
-        // Fetch user details of friends
-        const friends = await User.find({ _id: { $in: friendIds } }).select('-password'); // Exclude sensitive fields if needed
+        // 4. Get count of delivered messages grouped by sender
+        const deliveredMessages = await Message.aggregate([
+            {
+                $match: {
+                    receiver: userId,
+                    status: "delivered"
+                }
+            },
+            {
+                $group: {
+                    _id: "$sender",
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
 
-        console.log(friends, "friends >>>>>>>>>>>>>>>>>>>>>>>>>>");
+        // 5. Convert message count results to a map for quick lookup
+        const messageMap = {};
+        deliveredMessages.forEach(msg => {
+            messageMap[msg._id.toString()] = msg.count;
+        });
 
-        return res.status(200).json(friends);
+        // 6. Attach deliveredMessageCount to each friend
+        const friendsWithCount = friends.map(friend => {
+            return {
+                ...friend.toObject(),
+                deliveredMessageCount: messageMap[friend._id.toString()] || 0
+            };
+        });
+        console.log(friendsWithCount, "MMMMMMMMMMMMMMMMMMMMMMMMMMMCCCCCCCCCCCCCCCCCCCCC")
+
+        return res.status(200).json(friendsWithCount);
     } catch (error) {
         console.error('Error fetching friend list:', error);
         res.status(500).json({ error: 'Error fetching friend list' });

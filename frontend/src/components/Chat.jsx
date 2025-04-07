@@ -3,6 +3,7 @@ import { Send, Users, MessageCircle, Search, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import io from "socket.io-client";
 import image from "../img/avatar.jpg";
+import axios from "axios";
 
 const token = localStorage.getItem("token");
 const userId = localStorage.getItem("userId");
@@ -38,6 +39,7 @@ const Chat = () => {
       console.error("Error fetching friends:", error);
     }
   }
+
   useEffect(() => {
     getFriendsList();
   }, [setNewMessage]);
@@ -91,6 +93,7 @@ const Chat = () => {
       const transformedMsg = {
         text: serverMsg.message,
         sender: serverMsg.sender,
+        status: serverMsg.status,
         timestamp: new Date(serverMsg.createdAt).toLocaleTimeString(),
         _id: serverMsg._id,
       };
@@ -103,6 +106,14 @@ const Chat = () => {
       socket.off("message", messageHandler);
     };
   }, [socket]);
+
+  // Count delivered messages for a specific friend
+  const countDeliveredMessages = (friendId) => {
+    const friend = friends.find((f) => f._id === friendId);
+    const cachedCount = friend?.deliveredMessageCount || 0;
+    console.log(cachedCount, "<<<<<<<<<<<<<<<");
+    return cachedCount;
+  };
 
   // Fetch Chat Messages when Friend is Selected
   const getChatMessages = async (friend) => {
@@ -130,11 +141,28 @@ const Chat = () => {
       const transformedMessages = data.map((msg) => ({
         text: msg.message,
         sender: msg.sender,
+        status: msg.status,
         timestamp: new Date(msg.createdAt).toLocaleTimeString(),
         _id: msg._id,
       }));
 
       setMessages(transformedMessages);
+
+      // Mark messages as read when opening chat
+      const unreadMessages = transformedMessages.filter(
+        (msg) => msg.sender === friend._id && msg.status === "delivered"
+      );
+
+      if (unreadMessages.length > 0) {
+        try {
+          socket.emit("markAsRead", {
+            unreadMessages: unreadMessages.map((msg) => msg._id),
+          });
+        } catch (error) {
+          console.error("Error marking messages as read:", error);
+        }
+      }
+      await getFriendsList();
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
@@ -170,6 +198,37 @@ const Chat = () => {
       timestamp ||
       new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     );
+  };
+
+  // Delete the message
+  const handleDeleteMessage = async (id) => {
+    console.log("Deleting message with ID:", id);
+    try {
+      if (!id) return;
+
+      const res = await axios.delete(
+        "http://localhost:5000/chat/deleteMessage",
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          data: {
+            messageId: id,
+          },
+        }
+      );
+
+      console.log("Delete response:", res.data);
+
+      if (res.data.success) {
+        setMessages((prev) => prev.filter((msg) => msg._id !== id));
+      } else {
+        console.error("Error deleting message:", res.data.message);
+      }
+    } catch (error) {
+      console.error("Error deleting message:", error);
+    }
   };
 
   return (
@@ -288,16 +347,15 @@ const Chat = () => {
                             {messages.find((m) => m.sender === friend._id)
                               ?.text || "No messages yet"}
                           </p>
-                          <motion.span
-                            animate={{ scale: [1, 1.2, 1] }}
-                            transition={{ repeat: 0 }}
-                            className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-indigo-500 rounded-full"
-                          >
-                            {
-                              messages.filter((m) => m.sender === friend._id)
-                                .length
-                            }
-                          </motion.span>
+                          {countDeliveredMessages(friend._id) > 0 && (
+                            <motion.span
+                              animate={{ scale: [1, 1.2, 1] }}
+                              transition={{ repeat: 0 }}
+                              className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-indigo-500 rounded-full"
+                            >
+                              {countDeliveredMessages(friend._id)}
+                            </motion.span>
+                          )}
                         </div>
                       </div>
                     </motion.div>
@@ -347,7 +405,6 @@ const Chat = () => {
                 </div>
               </div>
             </motion.div>
-
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-br from-indigo-50 to-purple-50">
               <AnimatePresence>
@@ -375,24 +432,37 @@ const Chat = () => {
                         className="w-8 h-8 rounded-full mr-2 self-end mb-2"
                       />
                     )}
+
                     <div
-                      className={`max-w-[70%] rounded-2xl p-3 shadow-sm ${
+                      className={`relative max-w-[70%] rounded-2xl p-3 shadow-sm ${
                         message.sender === userId
                           ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white"
                           : "bg-white text-gray-800"
                       }`}
                     >
                       <p className="break-words">{message.text}</p>
-                      <p
-                        className={`text-xs mt-1 ${
-                          message.sender === userId
-                            ? "text-indigo-100"
-                            : "text-gray-400"
-                        }`}
-                      >
-                        {formatTimestamp(message.timestamp)}
-                      </p>
+                      <div className="flex justify-between items-center mt-1">
+                        <p
+                          className={`text-xs ${
+                            message.sender === userId
+                              ? "text-indigo-100"
+                              : "text-gray-400"
+                          }`}
+                        >
+                          {formatTimestamp(message.timestamp)}
+                        </p>
+                        {message.sender === userId && (
+                          <button
+                            onClick={() => handleDeleteMessage(message._id)}
+                            className="ml-2 text-xs text-red-300 hover:text-red-500"
+                            title="Delete message"
+                          >
+                            🗑️
+                          </button>
+                        )}
+                      </div>
                     </div>
+
                     {message.sender === userId && (
                       <img
                         src={image}
@@ -405,7 +475,6 @@ const Chat = () => {
               </AnimatePresence>
               <div ref={messagesEndRef} />
             </div>
-
             {/* Message Input */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}

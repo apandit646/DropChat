@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import Phone from "./components/Phone";
 import NavbarUser from "./components/NavbarUser";
+``;
 import Profile from "./components/Profile";
 import Chat from "./components/Chat";
 import News from "./components/News";

@@ -129,6 +129,27 @@ const socketHandler = (io) => {
         }
       }
     });
+
+
+    //read message status
+    socket.on("markAsRead", async (data) => {
+      const { unreadMessages } = data;
+      console.log("Read message ID:", unreadMessages);
+      unreadMessages.map(async (messageId) => {
+        try {
+          const updatedMessage = await Message.findByIdAndUpdate(
+            messageId,
+            { status: "read" },
+            { new: true }
+          );
+          if (updatedMessage) {
+            socket.emit("messageRead", updatedMessage);
+          }
+        } catch (error) {
+          console.error("Error updating message status:", error);
+        }
+      });
+    });
   });
 };
 

@@ -198,7 +198,7 @@ const GroupChat = () => {
           unRead: unReadMessage.map((msg) => msg._id),
         });
       }
-      setGroupName([...groupName]);
+      setGroupName([...groupName], (group.deliveredCount = 0));
 
       setMessages(transformedMessages); // Moved outside the if block
     } catch (error) {

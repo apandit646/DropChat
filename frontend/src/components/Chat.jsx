@@ -177,7 +177,7 @@ const Chat = () => {
       sender: userId,
       message: newMessage,
     });
-
+    getFriendsList();
     setNewMessage("");
   };
 

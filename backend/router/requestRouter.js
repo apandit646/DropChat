@@ -140,7 +140,8 @@ router.get('/getFriendList', authenticateToken, async (req, res) => {
         );
 
         // 3. Fetch user details of friends (exclude sensitive fields)
-        const friends = await User.find({ _id: { $in: friendIds } }).select("-password -token");
+        const friends = await User.find({ _id: { $in: friendIds } }).sort({ messagesTime: -1 });
+
 
         // 4. Get count of delivered messages grouped by sender
         const deliveredMessages = await Message.aggregate([

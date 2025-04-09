@@ -109,14 +109,56 @@ router.get("/chatGroupMessages", authenticateToken, async (req, res) => {
         console.log("Receiver ID:", groupId);
         console.log("Sender ID:", senderId);
 
-        const messages = await MessageGroup.find({
-            group: groupId
-        }).sort({ createdAt: 1 });
+        // Example in Express route
+        const messages = await MessageGroup.find({ group: groupId })
+            .populate("sender", "name") // populate sender's name only
+            .sort({ createdAt: 1 }); // optional: sort by time
 
         res.json(messages);
     } catch (error) {
         console.error("Error fetching messages:", error);
         res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+router.put("/group/removemember", authenticateToken, async (req, res) => {
+    const { memberId, groupId } = req.body;
+    console.log("Removing member:", memberId, "from group:", groupId);
+
+    if (!memberId || !groupId) {
+        return res.status(400).json({ message: "Member ID and Group ID are required." });
+    }
+
+    try {
+        const group = await Group.findById(groupId);
+        console.log("Group found:", group);
+
+        if (!group) {
+            return res.status(404).json({ message: "Group not found" });
+        }
+
+        // Convert string ID to ObjectId
+        const memberObjectId = new mongoose.Types.ObjectId(memberId);
+
+        const result = await Group.findByIdAndUpdate(
+            { _id: groupId },
+            { $pull: { members: { userId: memberObjectId } } }, // Update the last message time
+            { new: true } // Return the updated document
+        );
+
+        console.log("✅ MongoDB Update Result:", result);
+
+        if (result.modifiedCount === 0) {
+            return res.status(404).json({ message: "Member not found in group" });
+        }
+
+        return res.status(200).json({
+            message: "Member removed successfully",
+            modifiedCount: result.modifiedCount
+        });
+    } catch (error) {
+        console.error("❌ Error removing member:", error);
+        return res.status(500).json({ message: "Internal server error" });
     }
 });
 

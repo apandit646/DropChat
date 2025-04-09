@@ -109,6 +109,59 @@ const GroupChat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Fetch Group Messages when Group is Selected
+  const getChatMessages = async (group) => {
+    setSelectedGroup(group);
+    if (isMobileView) {
+      setShowSidebar(false);
+    }
+    // socket.emit("joinGroup", group._id);
+
+    try {
+      const res = await fetch(
+        `http://127.0.0.1:5000/chatGroupMessages?receiver=${group._id}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to fetch messages");
+
+      const data = await res.json();
+      console.log(data, "Fetched Chat History");
+
+      const transformedMessages = data.map((msg) => ({
+        text: msg.message,
+        sender: msg.sender._id, // Changed from msg.sender to msg.sender._id
+        senderName: msg.sender.name, // Add sender name for display
+        timestamp: new Date(msg.createdAt).toLocaleTimeString(),
+        _id: msg._id,
+      }));
+
+      const unReadMessage = data.filter((msg) =>
+        msg.status?.some((entry) => entry.userId === userId)
+      );
+
+      console.log(unReadMessage, "Filtered messages where user has status");
+
+      const unreadCount = unReadMessage.length;
+      if (unreadCount > 0) {
+        await socket.emit("markAsReadMessage", {
+          unRead: unReadMessage.map((msg) => msg._id),
+        });
+      }
+      setGroupName([...groupName], (group.deliveredCount = 0));
+
+      setMessages(transformedMessages); // Moved outside the if block
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+    }
+  };
+
   // Listen for Incoming Messages via Socket
   useEffect(() => {
     if (!socket) return;
@@ -120,10 +173,12 @@ const GroupChat = () => {
 
       const transformedMsg = {
         text: serverMsg.message || "No message",
-        sender: serverMsg.sender || "Unknown",
+        sender: serverMsg.sender, // Changed from serverMsg.sender
+        senderName: serverMsg.sender.name,
+        group: serverMsg.group, // Add sender name
         timestamp: serverMsg.createdAt
           ? new Date(serverMsg.createdAt).toLocaleTimeString()
-          : new Date().toLocaleTimeString(), // Fallback time
+          : new Date().toLocaleTimeString(),
         _id: serverMsg._id,
       };
 
@@ -154,57 +209,6 @@ const GroupChat = () => {
       groups.map((g) => g._id)
     );
   }, [socket, groups]);
-  // Fetch Group Messages when Group is Selected
-  const getChatMessages = async (group) => {
-    setSelectedGroup(group);
-    if (isMobileView) {
-      setShowSidebar(false);
-    }
-    // socket.emit("joinGroup", group._id);
-
-    try {
-      const res = await fetch(
-        `http://127.0.0.1:5000/chatGroupMessages?receiver=${group._id}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!res.ok) throw new Error("Failed to fetch messages");
-
-      const data = await res.json();
-      console.log(data, "Fetched Chat History");
-
-      const transformedMessages = data.map((msg) => ({
-        text: msg.message,
-        sender: msg.sender,
-        timestamp: new Date(msg.createdAt).toLocaleTimeString(),
-        _id: msg._id,
-      }));
-
-      const unReadMessage = data.filter((msg) =>
-        msg.status?.some((entry) => entry.userId === userId)
-      );
-
-      console.log(unReadMessage, "Filtered messages where user has status");
-
-      const unreadCount = unReadMessage.length;
-      if (unreadCount > 0) {
-        await socket.emit("markAsReadMessage", {
-          unRead: unReadMessage.map((msg) => msg._id),
-        });
-      }
-      setGroupName([...groupName], (group.deliveredCount = 0));
-
-      setMessages(transformedMessages); // Moved outside the if block
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-    }
-  };
 
   // Send Message
   const handleSendMessage = () => {
@@ -285,6 +289,24 @@ const GroupChat = () => {
     );
   };
 
+  // add member to group
+  const addMemberToGroup = async (groupId, memberId) => {
+    console.log(groupId, memberId, "Group ID and Member ID to add");
+    try {
+      socket
+        .emit("addMemberToGroup", {
+          groupId,
+          members: memberId.map((id) => ({
+            userId: id._id,
+          })),
+        })
+        .then((data) => {
+          console.log(data, "Added member to group successfully");
+        });
+    } catch (error) {
+      console.error("Error adding member to group:", error);
+    }
+  };
   return (
     <div className="flex h-screen bg-gradient-to-br from-indigo-50 to-purple-50 overflow-hidden">
       {/* Sidebar */}
@@ -407,12 +429,12 @@ const GroupChat = () => {
                             12:30 PM
                           </span>
                         </div>
-                        <div className="flex justify-between items-end">
-                          <p className="text-sm text-gray-600 truncate w-48">
-                            {messages.find((m) => m.sender === group._id)
+                        <div className="flex justify-between items-end gap-2">
+                          <p className="text-sm text-gray-600 truncate max-w-[12rem]">
+                            {messages.find((m) => m.group === group._id)
                               ?.text || (
                               <span className="italic text-gray-400">
-                                No messages yet
+                                Start a conversation
                               </span>
                             )}
                           </p>
@@ -421,7 +443,7 @@ const GroupChat = () => {
                             <motion.span
                               animate={{ scale: [1, 1.2, 1] }}
                               transition={{ duration: 0.3 }}
-                              className="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-indigo-500 rounded-full"
+                              className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold text-white bg-indigo-500 rounded-full shadow-sm"
                             >
                               {group.deliveredCount}
                             </motion.span>
@@ -490,7 +512,11 @@ const GroupChat = () => {
                 {showPopup && (
                   <GroupMembersPopup
                     members={selectedGroup.members}
-                    onAddMember={() => alert("Add Member Clicked")}
+                    onAddMember={(filteredFriends) => {
+                      addMemberToGroup(selectedGroup._id, filteredFriends);
+                    }}
+                    friends={friends}
+                    groupId={selectedGroup._id} // ✅ FIXED
                     onClose={() => setShowPopup(false)}
                   />
                 )}
@@ -524,6 +550,18 @@ const GroupChat = () => {
                         className="w-8 h-8 rounded-full mr-2 self-end mb-2"
                       />
                     )}
+                    <p
+                      className={`text-xs mt-1 ${
+                        message.sender === userId
+                          ? "text-black"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      {message.sender === userId
+                        ? `(You) `
+                        : message.senderName}
+                    </p>
+
                     <div
                       className={`max-w-[70%] rounded-2xl p-3 shadow-sm ${
                         message.sender === userId
@@ -532,6 +570,7 @@ const GroupChat = () => {
                       }`}
                     >
                       <p className="break-words">{message.text}</p>
+
                       <p
                         className={`text-xs mt-1 ${
                           message.sender === userId

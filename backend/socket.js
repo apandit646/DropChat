@@ -4,8 +4,10 @@ const User = require("./models/userModel");
 const Message = require("./models/chatSchema");
 const MessageGroup = require("./models/group_message_schema");
 const Group = require("./models/groupSchema");
+const RequestFriend = require("./models/requestFriend");
 const mongoose = require("mongoose");
 const { time } = require("console");
+const { mainModule } = require("process");
 
 const secretKey = crypto
   .createHash("sha256")
@@ -57,22 +59,40 @@ const socketHandler = (io) => {
     // 🔹 Handle sending private messages
     socket.on("sendMessage", async (data) => {
       const { sender, receiver, message } = data;
+
       try {
+        // Save the new message
         const newMessage = new Message({ sender, receiver, message });
         await newMessage.save();
-        // Send message to sender
+
+        // Emit message to sender
         socket.emit("message", newMessage);
 
-        // Send message to receiver if online
+        // Update the messagesTime for the friend request
+        await User.findByIdAndUpdate(
+          receiver,
+          { messagesTime: Date.now() },
+          { new: true }
+        )
+          .then((updatedRequest) => {
+            console.log("Updated request friend:", updatedRequest);
+          });
+
+        // Emit message to receiver if online (excluding sender if same socket)
         if (userSockets.has(receiver)) {
-          userSockets.get(receiver).forEach((socketId) => {
-            io.to(socketId).emit("message", newMessage);
+          const sockets = userSockets.get(receiver);
+          sockets.forEach((socketId) => {
+            // Avoid re-sending if sender and receiver are on the same socket
+            if (socketId !== socket.id) {
+              io.to(socketId).emit("message", newMessage);
+            }
           });
         }
       } catch (error) {
         console.error("Error sending message:", error);
       }
     });
+
     socket.on("joinGroup", async (groupId) => {
       if (!groupSockets.has(groupId)) {
         groupSockets.set(groupId, new Set());
@@ -157,6 +177,35 @@ const socketHandler = (io) => {
         }
       });
     })
+
+
+
+    // ass thge 
+    socket.on("addMemberToGroup", async ({ groupId, members }) => {
+      console.log("Adding members to group:", groupId, members);
+
+      try {
+        // Ensure members is an array of objects like { userId: "..." }
+        const updatedGroup = await Group.findByIdAndUpdate(
+          groupId,
+          {
+            $addToSet: {
+              members: {
+                $each: members,
+              },
+            },
+          },
+          { new: true }
+        );
+
+        console.log("✅ Updated group:", updatedGroup);
+
+      } catch (error) {
+        console.error("❌ Error updating group:", error);
+        socket.emit("memberAddedToGroup", { success: false, error });
+      }
+    });
+
 
 
     // 🔹 Handle user disconnection

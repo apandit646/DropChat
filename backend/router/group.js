@@ -109,10 +109,9 @@ router.get("/chatGroupMessages", authenticateToken, async (req, res) => {
         console.log("Receiver ID:", groupId);
         console.log("Sender ID:", senderId);
 
-        // Example in Express route
         const messages = await MessageGroup.find({ group: groupId })
-            .populate("sender", "name") // populate sender's name only
-            .sort({ createdAt: 1 }); // optional: sort by time
+            .populate("sender", "name photo")          // Populating sender with only name and photo fields
+            .sort({ createdAt: 1 });
 
         res.json(messages);
     } catch (error) {

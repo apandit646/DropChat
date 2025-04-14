@@ -7,6 +7,7 @@ const token = localStorage.getItem("token");
 const userId = localStorage.getItem("userId");
 const userName = localStorage.getItem("name");
 import GroupMembersPopup from "../common/GroupMembersPopup";
+const profileUrl = localStorage.getItem("photo") || image;
 
 const GroupChat = () => {
   const [socket, setSocket] = useState(null);
@@ -36,6 +37,7 @@ const GroupChat = () => {
       });
 
       const data = await res.json();
+
       if (Array.isArray(data)) {
         setFriends(data);
       }
@@ -137,7 +139,8 @@ const GroupChat = () => {
       const transformedMessages = data.map((msg) => ({
         text: msg.message,
         sender: msg.sender._id, // Changed from msg.sender to msg.sender._id
-        senderName: msg.sender.name, // Add sender name for display
+        senderName: msg.sender.name,
+        profileUrlPhoto: msg.sender.photo, // Add sender name for display
         timestamp: new Date(msg.createdAt).toLocaleTimeString(),
         _id: msg._id,
       }));
@@ -173,8 +176,9 @@ const GroupChat = () => {
 
       const transformedMsg = {
         text: serverMsg.message || "No message",
-        sender: serverMsg.sender, // Changed from serverMsg.sender
+        sender: serverMsg.sender._id, // Changed from serverMsg.sender
         senderName: serverMsg.sender.name,
+        profileUrlPhoto: serverMsg.sender.photo,
         group: serverMsg.group, // Add sender name
         timestamp: serverMsg.createdAt
           ? new Date(serverMsg.createdAt).toLocaleTimeString()
@@ -238,6 +242,7 @@ const GroupChat = () => {
   };
 
   const handleMemberSelection = (friend) => {
+    console.log(friend, "Selected Friend for Group Creation");
     if (selectedMembers.includes(friend._id)) {
       setSelectedMembers(selectedMembers.filter((id) => id !== friend._id));
     } else {
@@ -327,7 +332,7 @@ const GroupChat = () => {
                 <div className="flex items-center space-x-3">
                   <div className="relative">
                     <img
-                      src={image}
+                      src={profileUrl}
                       alt="Your Profile"
                       className="w-10 h-10 rounded-full border-2 border-white"
                     />
@@ -545,7 +550,7 @@ const GroupChat = () => {
                   >
                     {message.sender !== userId && (
                       <img
-                        src={image}
+                        src={message.profileUrlPhoto || image}
                         alt="Member"
                         className="w-8 h-8 rounded-full mr-2 self-end mb-2"
                       />
@@ -583,7 +588,7 @@ const GroupChat = () => {
                     </div>
                     {message.sender === userId && (
                       <img
-                        src={image}
+                        src={profileUrl || image}
                         alt="You"
                         className="w-8 h-8 rounded-full ml-2 self-end mb-2"
                       />

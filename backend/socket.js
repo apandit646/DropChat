@@ -61,30 +61,30 @@ const socketHandler = (io) => {
       const { sender, receiver, message } = data;
 
       try {
-        // Save the new message
-        const newMessage = new Message({ sender, receiver, message });
-        await newMessage.save();
+        // Step 1: Save the message
+        const newMessage = await Message.create({ sender, receiver, message });
 
-        // Emit message to sender
-        socket.emit("message", newMessage);
+        // Step 2: Populate sender and receiver details
+        const populatedMessage = await Message.findById(newMessage._id)
+          .populate("sender", "name email photo")     // Populate with correct fields
+          .populate("receiver", "name email photo");
 
-        // Update the messagesTime for the friend request
+        // Step 3: Emit to sender
+        socket.emit("message", populatedMessage);
+
+        // Step 4: Update messagesTime on receiver's user document
         await User.findByIdAndUpdate(
           receiver,
           { messagesTime: Date.now() },
           { new: true }
-        )
-          .then((updatedRequest) => {
-            console.log("Updated request friend:", updatedRequest);
-          });
+        );
 
-        // Emit message to receiver if online (excluding sender if same socket)
+        // Step 5: Emit to receiver if online
         if (userSockets.has(receiver)) {
           const sockets = userSockets.get(receiver);
           sockets.forEach((socketId) => {
-            // Avoid re-sending if sender and receiver are on the same socket
             if (socketId !== socket.id) {
-              io.to(socketId).emit("message", newMessage);
+              io.to(socketId).emit("message", populatedMessage);
             }
           });
         }
@@ -92,6 +92,7 @@ const socketHandler = (io) => {
         console.error("Error sending message:", error);
       }
     });
+
 
     socket.on("joinGroup", async (groupId) => {
       if (!groupSockets.has(groupId)) {
@@ -106,37 +107,63 @@ const socketHandler = (io) => {
     // 🔹 Handle sending group messages
     socket.on("sendGroupMessage", async (data) => {
       const { sender, group, message, messageTime } = data;
-      const groupMember = await Group.findById(group).populate("members.userId").select("members.userId").lean();
-      console.log("Group members:", groupMember);
-      const filterGroupMember = groupMember.members.filter((member) => member.userId._id.toString() !== sender);
-
-
 
       try {
-        const newMessage = new MessageGroup({ sender, group, message, status: filterGroupMember });
-        await newMessage.save();
-        // Broadcast to all group members
+        // Get group members (populate user details if needed)
+        const groupData = await Group.findById(group)
+          .populate("members.userId", "_id") // Populating only `_id` for safety and performance
+          .select("members.userId")
+          .lean();
+
+        if (!groupData) {
+          return console.error("Group not found for ID:", group);
+        }
+
+        const filteredMembers = groupData.members.filter(
+          (member) => member.userId._id.toString() !== sender
+        );
+
+        // Create and save new group message
+        const newMessage = await MessageGroup.create({
+          sender,
+          group,
+          message,
+          status: filteredMembers, // Can store read/unread status here
+          createdAt: messageTime || Date.now(), // Optional: use passed timestamp or current
+        });
+
+        console.log("New group message saved:", newMessage);
+
+        // Populate sender info before broadcasting
+        const populatedMessage = await MessageGroup.findById(newMessage._id)
+          .populate("sender", "name email photo")
+          .lean();
+
+        socket.emit("messageGroup", populatedMessage); // Emit to sender
+
+        // Send message to all group members (excluding sender if needed)
         if (groupSockets.has(group)) {
           groupSockets.get(group).forEach((userId) => {
             if (userSockets.has(userId)) {
-              console.log("Group message sent to userId:", userId);
               userSockets.get(userId).forEach((socketId) => {
-                console.log("Group message sent to socketId:", socketId);
-                io.to(socketId).emit("messageGroup", newMessage);
+                io.to(socketId).emit("messageGroup", populatedMessage);
               });
             }
           });
         }
-        const groupUpdate = await Group.findByIdAndUpdate(
+
+        // Update group's latest message timestamp
+        await Group.findByIdAndUpdate(
           group,
-          { messagesTime: Date.now() },  // Epoch time in milliseconds
+          { messagesTime: Date.now() },
           { new: true }
         );
 
       } catch (error) {
-        console.error("Error sending message:", error);
+        console.error("Error handling group message:", error);
       }
     });
+
 
 
 

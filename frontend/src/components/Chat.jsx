@@ -93,8 +93,9 @@ const Chat = () => {
       await getFriendsList();
       const transformedMsg = {
         text: serverMsg.message,
-        sender: serverMsg.sender,
+        sender: serverMsg.sender._id,
         status: serverMsg.status,
+        resProfileUrl: serverMsg.sender.photo,
         timestamp: new Date(serverMsg.createdAt).toLocaleTimeString(),
         _id: serverMsg._id,
       };

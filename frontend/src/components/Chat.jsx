@@ -235,7 +235,7 @@ const Chat = () => {
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-indigo-50 to-purple-50 overflow-hidden">
-      {/* Sidebar */}
+      {/* Sidebar - only render when visible */}
       <AnimatePresence>
         {showSidebar && (
           <motion.div
@@ -261,18 +261,16 @@ const Chat = () => {
                   </div>
                   <h2 className="font-bold">{userName || "Your Name"}</h2>
                 </div>
-                <div className="flex space-x-2">
-                  {isMobileView && (
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => setShowSidebar(false)}
-                      className="p-1 rounded-full hover:bg-white hover:bg-opacity-20"
-                    >
-                      <ArrowLeft size={18} />
-                    </motion.button>
-                  )}
-                </div>
+                {isMobileView && (
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setShowSidebar(false)}
+                    className="p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+                  >
+                    <ArrowLeft size={18} />
+                  </motion.button>
+                )}
               </div>
             </div>
 
@@ -299,27 +297,20 @@ const Chat = () => {
                 <div className="flex items-center space-x-2">
                   <Users className="h-4 w-4 text-indigo-600" />
                   <h3 className="font-medium text-indigo-700 text-sm">
-                    FRIENDS ({friends.length})
+                    FRIENDS ({filteredFriends.length})
                   </h3>
                 </div>
               </div>
 
-              <AnimatePresence>
-                {filteredFriends.length === 0 ? (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="p-4 text-center text-gray-500"
-                  >
-                    No friends found
-                  </motion.div>
-                ) : (
-                  filteredFriends.map((friend, index) => (
-                    <motion.div
+              {filteredFriends.length === 0 ? (
+                <div className="p-4 text-center text-gray-500">
+                  No friends found
+                </div>
+              ) : (
+                <div>
+                  {filteredFriends.map((friend) => (
+                    <div
                       key={friend._id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
                       onClick={() => getChatMessages(friend)}
                       className={`flex items-center space-x-3 p-3 cursor-pointer hover:bg-indigo-50 transition-colors border-l-4 ${
                         selectedFriend?._id === friend._id
@@ -350,20 +341,16 @@ const Chat = () => {
                               ?.text || "No messages yet"}
                           </p>
                           {countDeliveredMessages(friend._id) > 0 && (
-                            <motion.span
-                              animate={{ scale: [1, 1.2, 1] }}
-                              transition={{ repeat: 0 }}
-                              className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-indigo-500 rounded-full"
-                            >
+                            <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-indigo-500 rounded-full">
                               {countDeliveredMessages(friend._id)}
-                            </motion.span>
+                            </span>
                           )}
                         </div>
                       </div>
-                    </motion.div>
-                  ))
-                )}
-              </AnimatePresence>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -374,21 +361,15 @@ const Chat = () => {
         {selectedFriend ? (
           <>
             {/* Chat Header */}
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-4 border-b border-gray-200 bg-white shadow-sm flex justify-between items-center"
-            >
+            <div className="p-4 border-b border-gray-200 bg-white shadow-sm flex justify-between items-center">
               <div className="flex items-center space-x-3">
                 {isMobileView && !showSidebar && (
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
+                  <button
                     onClick={() => setShowSidebar(true)}
                     className="p-1 rounded-full text-indigo-600 hover:bg-indigo-50"
                   >
                     <ArrowLeft size={20} />
-                  </motion.button>
+                  </button>
                 )}
 
                 <div className="relative">
@@ -406,83 +387,72 @@ const Chat = () => {
                   <span className="text-xs text-green-500">Online</span>
                 </div>
               </div>
-            </motion.div>
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-br from-indigo-50 to-purple-50">
-              <AnimatePresence>
-                {messages.map((message, index) => (
-                  <motion.div
-                    key={message._id || index}
-                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{
-                      delay: index * 0.05,
-                      type: "spring",
-                      stiffness: 500,
-                      damping: 30,
-                    }}
-                    className={`flex ${
+            </div>
+
+            {/* Messages - use virtualization for large message lists */}
+            <div
+              className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-br from-indigo-50 to-purple-50"
+              id="message-container"
+            >
+              {messages.map((message, index) => (
+                <div
+                  key={message._id || index}
+                  className={`flex ${
+                    message.sender === userId ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  {message.sender !== userId && (
+                    <img
+                      src={message.resProfileUrl || image}
+                      alt={selectedFriend.name}
+                      className="w-8 h-8 rounded-full mr-2 self-end mb-2"
+                    />
+                  )}
+
+                  <div
+                    className={`relative max-w-[70%] rounded-2xl p-3 shadow-sm ${
                       message.sender === userId
-                        ? "justify-end"
-                        : "justify-start"
+                        ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white"
+                        : "bg-white text-gray-800"
                     }`}
                   >
-                    {message.sender !== userId && (
-                      <img
-                        src={message.resProfileUrl || image}
-                        alt={selectedFriend.name}
-                        className="w-8 h-8 rounded-full mr-2 self-end mb-2"
-                      />
-                    )}
-
-                    <div
-                      className={`relative max-w-[70%] rounded-2xl p-3 shadow-sm ${
-                        message.sender === userId
-                          ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white"
-                          : "bg-white text-gray-800"
-                      }`}
-                    >
-                      <p className="break-words">{message.text}</p>
-                      <div className="flex justify-between items-center mt-1">
-                        <p
-                          className={`text-xs ${
-                            message.sender === userId
-                              ? "text-indigo-100"
-                              : "text-gray-400"
-                          }`}
+                    <p className="break-words">{message.text}</p>
+                    <div className="flex justify-between items-center mt-1">
+                      <p
+                        className={`text-xs ${
+                          message.sender === userId
+                            ? "text-indigo-100"
+                            : "text-gray-400"
+                        }`}
+                      >
+                        {formatTimestamp(message.timestamp)}
+                      </p>
+                      {message.sender === userId && (
+                        <button
+                          onClick={() => handleDeleteMessage(message._id)}
+                          className="ml-2 text-xs text-red-300 hover:text-red-500"
+                          title="Delete message"
                         >
-                          {formatTimestamp(message.timestamp)}
-                        </p>
-                        {message.sender === userId && (
-                          <button
-                            onClick={() => handleDeleteMessage(message._id)}
-                            className="ml-2 text-xs text-red-300 hover:text-red-500"
-                            title="Delete message"
-                          >
-                            🗑️
-                          </button>
-                        )}
-                      </div>
+                          🗑️
+                        </button>
+                      )}
                     </div>
+                  </div>
 
-                    {message.sender === userId && (
-                      <img
-                        src={profileUrl || image}
-                        alt="You"
-                        className="w-8 h-8 rounded-full ml-2 self-end mb-2"
-                      />
-                    )}
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                  {message.sender === userId && (
+                    <img
+                      src={profileUrl || image}
+                      alt="You"
+                      className="w-8 h-8 rounded-full ml-2 self-end mb-2"
+                    />
+                  )}
+                </div>
+              ))}
               <div ref={messagesEndRef} />
             </div>
+
             {/* Message Input */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-4 bg-white border-t border-gray-200 shadow-md"
-            >
+            <div className="p-4 bg-white border-t border-gray-200 shadow-md">
               <div className="flex items-center space-x-2">
                 <input
                   type="text"
@@ -492,54 +462,21 @@ const Chat = () => {
                   placeholder="Type a message..."
                   className="flex-1 p-3 bg-gray-100 border border-transparent rounded-full focus:outline-none focus:border-indigo-300 focus:bg-white transition-colors"
                 />
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <button
                   onClick={handleSendMessage}
                   className="p-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full shadow-md hover:shadow-lg transition-shadow"
                 >
                   <Send className="h-5 w-5" />
-                </motion.button>
+                </button>
               </div>
-            </motion.div>
+            </div>
           </>
         ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex-1 flex items-center justify-center"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{
-                type: "spring",
-                stiffness: 300,
-                damping: 25,
-                delay: 0.2,
-              }}
-              className="text-center p-8 rounded-xl bg-white bg-opacity-60 backdrop-blur-sm shadow-lg"
-            >
-              <div className="relative w-24 h-24 mx-auto mb-4">
-                <motion.div
-                  animate={{
-                    scale: [1, 1.1, 1],
-                    opacity: [0.5, 0.8, 0.5],
-                  }}
-                  transition={{
-                    repeat: Infinity,
-                    duration: 2,
-                    ease: "easeInOut",
-                  }}
-                  className="absolute inset-0 bg-indigo-200 rounded-full"
-                ></motion.div>
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ repeat: Infinity, duration: 8, ease: "linear" }}
-                  className="absolute inset-0 flex items-center justify-center"
-                >
-                  <MessageCircle className="h-12 w-12 text-indigo-600" />
-                </motion.div>
+          // Empty state - simplified
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center p-8 rounded-xl bg-white bg-opacity-60 backdrop-blur-sm shadow-lg">
+              <div className="w-24 h-24 mx-auto mb-4 flex items-center justify-center">
+                <MessageCircle className="h-12 w-12 text-indigo-600" />
               </div>
               <h2 className="text-xl font-bold text-indigo-700 mb-2">
                 Start Chatting
@@ -549,17 +486,15 @@ const Chat = () => {
               </p>
 
               {isMobileView && !showSidebar && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <button
                   onClick={() => setShowSidebar(true)}
                   className="mt-6 px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full shadow-md hover:shadow-lg"
                 >
                   View Friends List
-                </motion.button>
+                </button>
               )}
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
       </div>
     </div>

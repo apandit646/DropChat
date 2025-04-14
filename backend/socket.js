@@ -151,9 +151,7 @@ const socketHandler = (io) => {
             { status: "read" },
             { new: true }
           );
-          if (updatedMessage) {
-            socket.emit("messageRead", updatedMessage);
-          }
+          console.log("Message updated:", updatedMessage);
         } catch (error) {
           console.error("Error updating message status:", error);
         }

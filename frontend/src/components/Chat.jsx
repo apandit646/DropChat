@@ -95,7 +95,6 @@ const Chat = () => {
         text: serverMsg.message,
         sender: serverMsg.sender,
         status: serverMsg.status,
-
         timestamp: new Date(serverMsg.createdAt).toLocaleTimeString(),
         _id: serverMsg._id,
       };
@@ -120,9 +119,7 @@ const Chat = () => {
   // Fetch Chat Messages when Friend is Selected
   const getChatMessages = async (friend) => {
     setSelectedFriend(friend);
-    if (isMobileView) {
-      setShowSidebar(false);
-    }
+    if (isMobileView) setShowSidebar(false);
 
     try {
       const res = await fetch(
@@ -139,7 +136,7 @@ const Chat = () => {
       if (!res.ok) throw new Error("Failed to fetch messages");
 
       const data = await res.json();
-      console.log(data);
+      console.log("Messages:", data);
 
       const transformedMessages = data.map((msg) => ({
         text: msg.message,
@@ -152,21 +149,22 @@ const Chat = () => {
 
       setMessages(transformedMessages);
 
-      // Mark messages as read when opening chat
       const unreadMessages = transformedMessages.filter(
-        (msg) => msg.sender._id === friend._id && msg.status === "delivered"
+        (msg) => msg.sender === friend._id && msg.status === "delivered"
       );
 
       if (unreadMessages.length > 0) {
-        try {
-          await socket.emit("markAsRead", {
-            unreadMessages: unreadMessages.map((msg) => msg._id),
-          });
-        } catch (error) {
-          console.error("Error marking messages as read:", error);
-        }
+        socket.emit("markAsRead", {
+          unreadMessages: unreadMessages.map((msg) => msg._id),
+        });
       }
-      setFriends([...friends], (friend.deliveredMessageCount = 0));
+
+      // Reset unread count
+      setFriends((prev) =>
+        prev.map((f) =>
+          f._id === friend._id ? { ...f, deliveredMessageCount: 0 } : f
+        )
+      );
     } catch (error) {
       console.error("Error fetching messages:", error);
     }

@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import Phone from "./components/Phone";
 import NavbarUser from "./components/NavbarUser";
-``;
-import Profile from "./components/Profile";
+
 import Chat from "./components/Chat";
 import News from "./components/News";
 import HomePage from "./components/HomePage";
@@ -40,7 +39,6 @@ function App() {
           </>
         ) : (
           <>
-            <Route path="/profile" element={<Profile />} />
             <Route path="/home" element={<HomePage />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/group-chat" element={<GroupChat />} />

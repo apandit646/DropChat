@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,6 +14,7 @@ const Phone = ({ setIsLoggedIn }) => {
   const [userDetails, setUserDetails] = useState({
     name: "",
     email: "",
+    photo: null,
   });
 
   const navigate = useNavigate();
@@ -68,8 +70,6 @@ const Phone = ({ setIsLoggedIn }) => {
         },
         body: JSON.stringify({ phone: `${countryCode}${phone}`, otp }),
       });
-
-      const data = await response.json();
       if (response.ok) {
         setMessage("OTP verified successfully!");
         setShowUserDetailsModal(true);
@@ -84,26 +84,36 @@ const Phone = ({ setIsLoggedIn }) => {
     setOtp("");
     sendOtp();
   };
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setUserDetails({
+        ...userDetails,
+        photo: file,
+        photoPreview: URL.createObjectURL(file),
+      });
+    }
+  };
 
   const handleUserDetailsSubmit = async (e) => {
     e.preventDefault();
-    if (!userDetails.name || !userDetails.email) {
+    if (!userDetails.name || !userDetails.email || !userDetails.photo) {
       setMessage("Please fill in all fields");
       return;
     }
 
     setLoading(true);
     try {
+      const formData = new FormData();
+      formData.append("phone", `${countryCode}${phone}`);
+      formData.append("name", userDetails.name);
+      formData.append("email", userDetails.email);
+      formData.append("photo", userDetails.photo); // Attach the image file
+
+      // Do NOT set Content-Type, let the browser set it automatically
       const response = await fetch("http://localhost:5000/user/details", {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          phone: `${countryCode}${phone}`,
-          name: userDetails.name,
-          email: userDetails.email,
-        }),
+        body: formData, // Use FormData as the body
       });
 
       const data = await response.json();
@@ -112,10 +122,14 @@ const Phone = ({ setIsLoggedIn }) => {
         await localStorage.setItem("name", data.name);
         await localStorage.setItem("userId", data.id);
         await localStorage.setItem("email", data.email);
+        await localStorage.setItem("photo", data.photo);
         setIsLoggedIn(true);
         navigate("/chat");
+      } else {
+        setMessage("Failed to save details.");
       }
     } catch (error) {
+      console.error(error);
       setMessage("Error saving details. Please try again.");
     }
     setLoading(false);
@@ -352,7 +366,6 @@ const Phone = ({ setIsLoggedIn }) => {
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
               className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl relative overflow-hidden"
             >
-              {/* Decorative elements */}
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-full opacity-20"></div>
 
               <h3 className="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
@@ -398,6 +411,30 @@ const Phone = ({ setIsLoggedIn }) => {
                     required
                   />
                 </div>
+
+                <div>
+                  <label
+                    htmlFor="profilePhoto"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Profile Photo
+                  </label>
+                  <input
+                    type="file"
+                    id="profilePhoto"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="w-full px-4 py-2 border border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                  />
+                  {userDetails.photoPreview && (
+                    <img
+                      src={userDetails.photoPreview}
+                      alt="Preview"
+                      className="mt-3 h-24 w-24 rounded-full object-cover border-2 border-indigo-500"
+                    />
+                  )}
+                </div>
+
                 <div className="flex gap-4 pt-2">
                   <motion.button
                     type="submit"

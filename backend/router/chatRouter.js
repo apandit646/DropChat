@@ -25,7 +25,7 @@ router.get("/chatMessages", authenticateToken, async (req, res) => {
                 { sender: senderId, receiver: receiverId },
                 { sender: receiverId, receiver: senderId }
             ]
-        }).sort({ createdAt: 1 });
+        }).sort({ createdAt: 1 }).populate("sender", "name email photo").populate("receiver", "name email photo");
 
         res.json(messages);
     } catch (error) {

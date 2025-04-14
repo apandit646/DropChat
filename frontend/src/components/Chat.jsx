@@ -8,6 +8,7 @@ import axios from "axios";
 const token = localStorage.getItem("token");
 const userId = localStorage.getItem("userId");
 const userName = localStorage.getItem("name");
+const profileUrl = localStorage.getItem("photo") || image;
 
 const Chat = () => {
   const [socket, setSocket] = useState(null);
@@ -94,6 +95,7 @@ const Chat = () => {
         text: serverMsg.message,
         sender: serverMsg.sender,
         status: serverMsg.status,
+
         timestamp: new Date(serverMsg.createdAt).toLocaleTimeString(),
         _id: serverMsg._id,
       };
@@ -137,11 +139,13 @@ const Chat = () => {
       if (!res.ok) throw new Error("Failed to fetch messages");
 
       const data = await res.json();
+      console.log(data);
 
       const transformedMessages = data.map((msg) => ({
         text: msg.message,
-        sender: msg.sender,
+        sender: msg.sender._id,
         status: msg.status,
+        resProfileUrl: msg.sender.photo,
         timestamp: new Date(msg.createdAt).toLocaleTimeString(),
         _id: msg._id,
       }));
@@ -150,7 +154,7 @@ const Chat = () => {
 
       // Mark messages as read when opening chat
       const unreadMessages = transformedMessages.filter(
-        (msg) => msg.sender === friend._id && msg.status === "delivered"
+        (msg) => msg.sender._id === friend._id && msg.status === "delivered"
       );
 
       if (unreadMessages.length > 0) {
@@ -251,7 +255,7 @@ const Chat = () => {
                 <div className="flex items-center space-x-3">
                   <div className="relative">
                     <img
-                      src={image}
+                      src={profileUrl}
                       alt="Your Profile"
                       className="w-10 h-10 rounded-full border-2 border-white"
                     />
@@ -327,7 +331,7 @@ const Chat = () => {
                     >
                       <div className="relative">
                         <img
-                          src={image}
+                          src={friend.photo || image}
                           alt={friend.name}
                           className="w-12 h-12 rounded-full object-cover border border-gray-200"
                         />
@@ -391,7 +395,7 @@ const Chat = () => {
 
                 <div className="relative">
                   <img
-                    src={image}
+                    src={selectedFriend.photo || image}
                     alt={selectedFriend.name}
                     className="w-10 h-10 rounded-full object-cover border border-gray-200"
                   />
@@ -427,7 +431,7 @@ const Chat = () => {
                   >
                     {message.sender !== userId && (
                       <img
-                        src={image}
+                        src={message.resProfileUrl || image}
                         alt={selectedFriend.name}
                         className="w-8 h-8 rounded-full mr-2 self-end mb-2"
                       />
@@ -465,7 +469,7 @@ const Chat = () => {
 
                     {message.sender === userId && (
                       <img
-                        src={image}
+                        src={profileUrl || image}
                         alt="You"
                         className="w-8 h-8 rounded-full ml-2 self-end mb-2"
                       />

@@ -1,20 +1,37 @@
 const express = require('express');
-
+const multer = require("multer");
 const dotenv = require("dotenv");
 const twilio = require("twilio");
 const User = require('../models/userModel');
 const OTPschema = require('../models/otpSchema');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const supabase = require('../common/supabaseClient');
 
 
 dotenv.config();
 
 const router = express.Router();
 
-const algorithm = 'aes-256-cbc';
+
 const secretKey = crypto.createHash('sha256').update(String('your-secret-key')).digest('base64').substr(0, 32);
-const iv = crypto.createHash('sha256').update(String('your-fixed-iv')).digest('base64').substr(0, 16);
+// multer set-Up
+const storage = multer.memoryStorage();
+
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = ["image/jpeg", "image/png"];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only JPG and PNG files are allowed"), false);
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // optional: 5MB limit
+});
 
 
 const client = twilio(
@@ -90,14 +107,26 @@ router.post("/otp/verify-otp", async (req, res) => {
   }
 });
 // ✅  Deatil update done 
-router.put("/user/details", async (req, res) => {
+router.put("/user/details", upload.single("photo"), async (req, res) => {
   const { phone, name, email } = req.body;
+  const photo = req.file.photo;
   console.log(req.body);
 
 
   try {
-    const user = await User.findOneAndUpdate({ phone }, { name, email }, { new: true });
-
+    const { data, error } = await supabase.storage
+      .from('pdfurl')
+      .upload(req.file.originalname, req.file.buffer, { contentType: req.file.mimetype });
+    if (error) {
+      console.error("Error uploading file:", error);
+      return res.status(500).json({ error: "Error uploading file" });
+    }
+    const namePDF = req.file.originalname
+    const fileUrl = supabase.storage
+      .from('pdfurl')
+      .getPublicUrl(namePDF);
+    console.log('File URL:', fileUrl.data.publicUrl);
+    const user = await User.findOneAndUpdate({ phone }, { name, email, photo: fileUrl.data.publicUrl }, { new: true });
     if (!user) {
       return res.status(400).json({ error: "User not found" });
     }
@@ -109,6 +138,7 @@ router.put("/user/details", async (req, res) => {
       token,
       name: user.name,
       email: user.email,
+      photo: fileUrl.data.publicUrl,
       id: user._id.toString(),
     });
   } catch (error) {
